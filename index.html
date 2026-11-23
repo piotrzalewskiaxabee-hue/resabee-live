@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-geo@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<title>Resabee Live - Black Week 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#231F20; --red:#F31C2A; --light:#F7F7F7; --white:#FFFFFF;
+  --g1:#58595B; --g2:#A7A9AC; --g3:#DCDDDE;
+  --panel:#2B2728; --line:#3A3536; --muted:#A7A9AC;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--black);color:var(--white);font-family:Poppins,Arial,sans-serif;overflow:hidden}
+body{display:grid;grid-template-columns:minmax(300px,22vw) 1fr minmax(320px,24vw);grid-template-rows:auto 1fr minmax(240px,30vh) auto;gap:12px;padding:14px 16px 8px;height:100vh}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.ptitle{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.ptitle small{font-size:10px;letter-spacing:.04em;text-transform:none;color:var(--g1)}
+
+header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;align-items:center;gap:14px}
+.brand h1{font-size:22px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.brand h1 span{font-weight:300}
+.live{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;letter-spacing:.14em;border:1px solid var(--line);border-radius:99px;padding:4px 12px 4px 10px}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 0 rgba(243,28,42,.7);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(243,28,42,.7)}70%{box-shadow:0 0 0 9px rgba(243,28,42,0)}100%{box-shadow:0 0 0 0 rgba(243,28,42,0)}}
+.bw{display:flex;align-items:center;gap:18px}
+.bwtag{background:var(--red);color:#fff;font-weight:700;font-size:13px;letter-spacing:.08em;padding:6px 14px;border-radius:99px;white-space:nowrap}
+.bwinfo{font-size:12px;color:var(--muted);line-height:1.35;white-space:nowrap}
+.bwinfo b{color:#fff;font-weight:600}
+.daybar{display:flex;gap:3px;margin-top:4px}
+.daybar span{width:18px;height:4px;border-radius:2px;background:var(--line)}
+.daybar span.on{background:var(--red)}
+.daybar span.done{background:var(--g2)}
+.clock{font-size:30px;font-weight:300;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.demo{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--black);background:var(--g3);border-radius:4px;padding:3px 7px}
+
+#kpis{grid-column:1;grid-row:2;display:flex;flex-direction:column;gap:12px;min-height:0}
+.kpi{padding:12px 16px}
+.kpi .lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.kpi .val{font-size:clamp(26px,2.5vw,44px);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:2px;white-space:nowrap}
+.kpi .val.red{color:var(--red)}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi .sub b{color:#fff;font-weight:600}
+.kpi.hero{flex:1.2;display:flex;flex-direction:column}
+.kpi.hero .val{font-size:clamp(34px,3.4vw,62px)}
+.spark{flex:1;min-height:40px;margin-top:8px}
+.kpirow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kpirow .kpi .val{font-size:clamp(20px,1.7vw,30px)}
+.up{color:#fff;font-weight:600}
+
+#mapwrap{grid-column:2;grid-row:2;padding:0}
+#mapwrap svg,#mapwrap canvas{position:absolute;inset:0;width:100%;height:100%}
+#map path{fill:#3A3536;stroke:#5A5355;stroke-width:.6}
+#map path.pl{fill:#58595B;stroke:#A7A9AC}
+.mapov{position:absolute;font-size:11px;color:var(--muted);z-index:2}
+#apt{top:14px;left:16px;background:rgba(35,31,32,.82);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:180px}
+#apt .row{display:grid;grid-template-columns:34px 1fr 34px;align-items:center;gap:6px;margin-top:5px;color:#fff;font-variant-numeric:tabular-nums}
+#apt .bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+#apt .bar i{display:block;height:100%;background:var(--g2)}
+#apt .row:first-of-type .bar i{background:#fff}
+#legend{bottom:12px;left:16px;display:flex;gap:16px;align-items:center}
+#legend span{display:inline-flex;align-items:center;gap:6px}
+#legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+#rate{position:absolute;top:14px;right:16px;text-align:right;z-index:2}
+#rate .n{font-size:clamp(30px,3vw,54px);font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+#rate .t{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+#edgeW,#edgeE{bottom:12px;font-size:10px;color:var(--g1)}
+#edgeE{right:16px}
+
+#feedp{grid-column:3;grid-row:2;display:flex;flex-direction:column}
+#feed{list-style:none;display:flex;flex-direction:column;gap:8px;overflow:hidden;flex:1}
+#feed li{border:1px solid var(--line);border-left:3px solid var(--g1);border-radius:10px;padding:9px 12px;background:#2F2B2C;transition:border-color 4s, background 4s}
+#feed li.new{border-left-color:var(--red);background:#3A2C2E;animation:slide .6s ease-out}
+@keyframes slide{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+#feed .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#feed .dst{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#feed .dst span{font-weight:300;color:var(--muted)}
+#feed .pr{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#feed .meta{font-size:11px;color:var(--muted);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+#feed .disc{color:#fff;background:var(--red);border-radius:4px;padding:0 5px;font-weight:600}
+#nextb{font-size:11px;color:var(--muted);margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+
+#hourly{grid-column:1;grid-row:3;display:flex;flex-direction:column}
+#hourly svg{flex:1;width:100%;min-height:0}
+#mid{grid-column:2;grid-row:3;display:grid;grid-template-columns:1.15fr 1fr 1.15fr;gap:12px;min-height:0}
+#season{grid-column:3;grid-row:3;display:flex;flex-direction:column}
+#season svg{flex:1;width:100%;min-height:0}
+.headline{font-size:14px;font-weight:600;margin:-4px 0 8px;line-height:1.3}
+.headline em{font-style:normal;color:var(--red)}
+.bars{display:flex;flex-direction:column;gap:6px}
+.br{display:grid;grid-template-columns:minmax(80px,1fr) 1.3fr 52px;align-items:center;gap:8px;font-size:12px}
+.br .k{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.br .b{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.br .b i{display:block;height:100%;background:var(--g2);border-radius:4px;transition:width .8s ease}
+.br:first-child .b i{background:#fff}
+.br.hl .b i{background:var(--red)}
+.br .v{text-align:right;font-variant-numeric:tabular-nums;color:#fff;font-weight:500}
+.br .v small{font-size:10px;margin-left:2px}
+.tr-up{color:#fff}.tr-dn{color:var(--g1)}
+
+footer{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--g1);gap:16px}
+footer .pw{display:flex;align-items:center;gap:8px}
+footer .pw svg{height:14px;width:auto}
+footer button{font:inherit;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--g2);background:none;border:1px solid var(--line);border-radius:99px;padding:3px 10px;cursor:pointer}
+footer button.on{color:#fff;border-color:var(--red)}
+
+@media (max-width:1100px){
+  html,body{overflow:auto}
+  body{grid-template-columns:1fr;grid-template-rows:auto;height:auto}
+  header{flex-wrap:wrap}
+  #kpis,#mapwrap,#feedp,#hourly,#mid,#season{grid-column:1;grid-row:auto}
+  #mapwrap{height:60vh}
+  #mid{grid-template-columns:1fr}
+  #feedp{height:520px}
+  #hourly,#season{height:260px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>Resabee <span>Travel Tech</span></h1>
+    <div class="live"><i></i>LIVE</div>
+    <div class="demo" title="Dane symulowane - wersja demonstracyjna">DANE DEMO</div>
+  </div>
+  <div class="bw">
+    <div class="bwtag">BLACK WEEK 2026</div>
+    <div class="bwinfo"><b id="bwday">Dzień 1 z 8</b> · 23-30 listopada · Black Friday 27.11<div class="daybar" id="daybar"></div></div>
+    <div class="clock" id="clock">00:00:00</div>
+  </div>
+</header>
+
+<section id="kpis">
+  <div class="panel kpi hero">
+    <div class="lbl">Wyszukiwania dziś</div>
+    <div class="val" id="kSearch">0</div>
+    <div class="sub"><b id="kUplift">+0%</b> vs zwykły poniedziałek o tej porze</div>
+    <svg class="spark" id="spark" preserveAspectRatio="none"></svg>
+    <div class="sub">Wyszukiwania na sekundę · ostatnie 60 s · rekord dnia <b id="kPeak">0/s</b></div>
+  </div>
+  <div class="panel kpi">
+    <div class="lbl">Rezerwacje dziś</div>
+    <div class="val red" id="kBook">0</div>
+    <div class="sub"><b id="kPax">0</b> uczestników · ostatnia <b id="kLast">-</b></div>
+  </div>
+  <div class="panel kpi">
+    <div class="lbl">Wartość rezerwacji dziś</div>
+    <div class="val" id="kGmv">0 zł</div>
+    <div class="sub">średnio <b id="kAvg">0 zł</b> za rezerwację</div>
+  </div>
+  <div class="kpirow">
+    <div class="panel kpi"><div class="lbl">Wyszukiwań na 1 rezerwację</div><div class="val" id="kRatio">0</div></div>
+    <div class="panel kpi"><div class="lbl">Ruch mobile</div><div class="val" id="kMob">0%</div><div class="sub">desktop <b id="kDesk">0%</b></div></div>
+  </div>
+</section>
+
+<section class="panel" id="mapwrap">
+  <svg id="map" viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid meet" aria-label="Mapa kierunków wyszukiwań i rezerwacji z Polski"></svg>
+  <canvas id="fx"></canvas>
+  <div class="mapov" id="apt"><div class="ptitle" style="margin:0">Wylot z <small>15 min</small></div><div id="aptRows"></div></div>
+  <div id="rate"><div class="n" id="kRate">0</div><div class="t">wyszukiwań / s</div></div>
+  <div class="mapov" id="legend">
+    <span><i style="background:#fff"></i>wyszukiwanie (próbka)</span>
+    <span><i style="background:var(--red)"></i>rezerwacja</span>
+  </div>
+  <div class="mapov" id="edgeE">Karaiby i Azja przypięte do krawędzi mapy</div>
+</section>
+
+<section class="panel" id="feedp">
+  <div class="ptitle">Nowe rezerwacje <small>na żywo</small></div>
+  <ul id="feed"></ul>
+  <div id="nextb">Średnio nowa rezerwacja co <b id="kEvery" style="color:#fff">-</b> przy obecnym ruchu</div>
+</section>
+
+<section class="panel" id="hourly">
+  <div class="ptitle">Wyszukiwania w ciągu dnia <small>mln / h</small></div>
+  <div class="headline" id="hHead">-</div>
+  <svg id="hsvg" preserveAspectRatio="none"></svg>
+</section>
+
+<section id="mid">
+  <div class="panel"><div class="ptitle">Top kierunki <small>udział · 15 min</small></div><div class="bars" id="bDest"></div></div>
+  <div class="panel"><div class="ptitle">Konfiguracja pokoju <small>dorośli+dzieci</small></div><div class="bars" id="bCfg"></div></div>
+  <div class="panel"><div class="ptitle">Najczęstsze filtry <small>% wyszukiwań</small></div><div class="bars" id="bFlt"></div></div>
+</section>
+
+<section class="panel" id="season">
+  <div class="ptitle">Na kiedy szukają <small>miesiąc wyjazdu · 15 min</small></div>
+  <div class="headline" id="sHead">-</div>
+  <svg id="ssvg" preserveAspectRatio="none"></svg>
+</section>
+
+<footer>
+  <div>Dane symulowane na potrzeby prezentacji. Wersja produkcyjna: zasilanie z API Resabee (zdarzenia search i booking).</div>
+  <div style="display:flex;gap:14px;align-items:center">
+    <span>Tempo rezerwacji:</span>
+    <button id="spd1" class="on">realne</button><button id="spd8">pokazowe x8</button>
+    <span class="pw">powered by <svg role="img" aria-label="axabee" xmlns="http://www.w3.org/2000/svg" viewBox="151.8 150.9 562.5 98.3"><title>axabee</title><path fill="#F31C2A" d="M269.5,203.3c-1-0.1-2.1-0.2-3.2-0.2c-12.4,0-22.6-10.2-22.6-22.7c0-1.1-0.1-2.1-0.2-3.2 c-1.5-11.2-11.2-19.9-22.9-19.9c-11.7,0-21.4,8.7-22.9,20c-0.1,1-0.2,2-0.2,3.1c0,12.5-10.2,22.7-22.7,22.7c-1.1,0-2.1,0.1-3.2,0.2 c-11.2,1.5-19.8,11.2-19.8,22.8c0,12.7,10.3,23.1,23,23.1c11.7,0,21.4-8.7,22.9-20c0.1-1,0.2-2,0.2-3.1c0-12.4,10.2-22.6,22.7-22.6 c12.5,0,22.7,10.1,22.7,22.6c0,1.1,0.1,2.1,0.2,3.2c1.5,11.2,11.2,19.9,22.8,19.9c12.7,0,23.1-10.4,23.1-23.1 C289.4,214.4,280.8,204.8,269.5,203.3z"/><path fill="#FFFFFF" d="M372.3,174.2l-0.1,58.4H357v-7.9c-4,5.5-10.1,9.1-18.3,9.1c-15.3,0-26.7-12.5-26.7-30.5 c0-18.1,11.6-30.5,26.6-30.5c8.3,0,14.4,3.8,18.5,9.4v-8.2H372.3z M357.1,203.4c0-9.6-6.5-16-15-16s-14.8,6.5-14.8,16 c0,9.7,6.4,16,14.8,16C350.7,219.4,357.1,213.1,357.1,203.4z"/><path fill="#FFFFFF" d="M422.4,232.6l-12-18.4L399,232.6h-18.3l20.6-30.2l-19.5-28.3h18.1l11.1,17.1l10.3-17.1h18.3l-19.5,28.7 l20.5,29.7H422.4z"/><path fill="#FFFFFF" d="M502.9,174.2l-0.1,58.4h-15.2v-7.9c-4,5.5-10.1,9.1-18.3,9.1c-15.3,0-26.7-12.5-26.7-30.5 c0-18.1,11.6-30.5,26.5-30.5c8.3,0,14.4,3.8,18.5,9.4v-8.2H502.9z M487.7,203.4c0-9.6-6.5-16-15-16c-8.5,0-14.8,6.5-14.8,16 c0,9.7,6.4,16,14.8,16C481.2,219.4,487.7,213.1,487.7,203.4z"/><path fill="#FFFFFF" d="M575.3,203.4c0,18-11.5,30.5-26.7,30.5c-8.3,0-14.3-3.6-18.5-9.1v7.9H515v-81.8h15.2v31.5 c4-5.6,10.3-9.4,18.5-9.4C563.6,172.9,575.3,185.3,575.3,203.4z M559.9,203.4c0-9.6-6.3-16-14.8-16c-8.5,0-15,6.5-15,16 c0,9.7,6.5,16,15,16C553.5,219.4,559.9,213.1,559.9,203.4z"/><path fill="#FFFFFF" d="M644.9,207.3H600c1,9.3,7.3,14,15.2,14c5.8,0,10.9-2.7,13-7.3h15.7c-4.4,13.8-16,19.9-28.6,19.9 c-18.3,0-30.8-13-30.8-30.4c0-17.5,12.6-30.6,30.5-30.6C634.4,172.9,646.4,188.1,644.9,207.3z M600.8,196.2h27.9 c-1.7-6.4-6.5-10.7-13.8-10.7C607.5,185.4,602.7,189.9,600.8,196.2z"/><path fill="#FFFFFF" d="M714.1,207.3h-44.8c1,9.3,7.3,14,15.2,14c5.8,0,10.9-2.7,13-7.3h15.7c-4.4,13.8-16,19.9-28.6,19.9 c-18.3,0-30.8-13-30.8-30.4c0-17.5,12.6-30.6,30.5-30.6C703.6,172.9,715.6,188.1,714.1,207.3z M670.1,196.2H698 c-1.7-6.4-6.5-10.7-13.8-10.7C676.7,185.4,672,189.9,670.1,196.2z"/></svg></span>
+  </div>
+</footer>
+
+<script>
+const MAP = {"W":1000,"H":680,"dest":[{"city":"Hurghada","country":"Egipt","x":627.2,"y":379.1,"w":15,"edge":null},{"city":"Marsa Alam","country":"Egipt","x":635.9,"y":398.7,"w":7,"edge":null},{"city":"Sharm el-Sheikh","country":"Egipt","x":631.4,"y":373.2,"w":4,"edge":null},{"city":"Antalya","country":"Turcja","x":602.2,"y":287.3,"w":9,"edge":null},{"city":"Alanya","country":"Turcja","x":612.7,"y":291,"w":4,"edge":null},{"city":"Bodrum","country":"Turcja","x":575.9,"y":286,"w":3,"edge":null},{"city":"Teneryfa","country":"Hiszpania","x":221.3,"y":369.7,"w":6,"edge":null},{"city":"Gran Canaria","country":"Hiszpania","x":229.6,"y":373.1,"w":4,"edge":null},{"city":"Fuerteventura","country":"Hiszpania","x":242.1,"y":369.1,"w":3,"edge":null},{"city":"Majorka","country":"Hiszpania","x":376.5,"y":260,"w":3,"edge":null},{"city":"Costa del Sol","country":"Hiszpania","x":315.7,"y":291.4,"w":2,"edge":null},{"city":"Kreta","country":"Grecja","x":554.7,"y":303.9,"w":6,"edge":null},{"city":"Rodos","country":"Grecja","x":582.3,"y":292.1,"w":4,"edge":null},{"city":"Korfu","country":"Grecja","x":515.5,"y":259.5,"w":2,"edge":null},{"city":"Zakynthos","country":"Grecja","x":523.3,"y":278.4,"w":2,"edge":null},{"city":"Djerba","country":"Tunezja","x":442.5,"y":317.9,"w":3,"edge":null},{"city":"Monastir","country":"Tunezja","x":442.3,"y":298.6,"w":2,"edge":null},{"city":"Larnaka","country":"Cypr","x":625.8,"y":307,"w":2,"edge":null},{"city":"Złote Piaski","country":"Bułgaria","x":580.8,"y":220.1,"w":2,"edge":null},{"city":"Durres","country":"Albania","x":511.7,"y":241.5,"w":2,"edge":null},{"city":"Agadir","country":"Maroko","x":277.9,"y":350.1,"w":2,"edge":null},{"city":"Madera","country":"Portugalia","x":219.1,"y":329,"w":2,"edge":null},{"city":"Sal","country":"Wyspy Zielonego Przylądka","x":170.4,"y":470.5,"w":2,"edge":null},{"city":"Dubaj","country":"ZEA","x":799.9,"y":397.6,"w":6,"edge":null},{"city":"Salalah","country":"Oman","x":790.5,"y":468.2,"w":2,"edge":null},{"city":"Zanzibar","country":"Tanzania","x":670.6,"y":656.9,"w":6,"edge":null},{"city":"Punta Cana","country":"Dominikana","x":14,"y":430,"w":5,"edge":"W"},{"city":"Cancun","country":"Meksyk","x":14,"y":470,"w":3,"edge":"W"},{"city":"Varadero","country":"Kuba","x":14,"y":510,"w":2,"edge":"W"},{"city":"Phuket","country":"Tajlandia","x":986,"y":560,"w":3,"edge":"E"},{"city":"Malediwy","country":"Malediwy","x":986,"y":600,"w":2,"edge":"E"},{"city":"Sri Lanka","country":"Sri Lanka","x":986,"y":640,"w":2,"edge":"E"}],"airports":[{"code":"WAW","city":"Warszawa","x":523.9,"y":113.4,"w":22},{"code":"KTW","city":"Katowice","x":508.7,"y":135.3,"w":20},{"code":"KRK","city":"Kraków","x":514.3,"y":140.2,"w":9},{"code":"WRO","city":"Wrocław","x":491.1,"y":127.3,"w":10},{"code":"POZ","city":"Poznań","x":490.6,"y":110.1,"w":9},{"code":"GDN","city":"Gdańsk","x":503.8,"y":83.7,"w":9},{"code":"RZE","city":"Rzeszów","x":532.4,"y":139.8,"w":5},{"code":"LUZ","city":"Lublin","x":537.9,"y":125.5,"w":4},{"code":"SZZ","city":"Szczecin","x":475.1,"y":94.6,"w":3},{"code":"BZG","city":"Bydgoszcz","x":499.8,"y":101.1,"w":3},{"code":"LCJ","city":"Łódź","x":511.3,"y":119.3,"w":3},{"code":"WMI","city":"Modlin","x":521.3,"y":109.7,"w":3}]};
+const NF = new Intl.NumberFormat('pl-PL');
+const fmt = n => NF.format(Math.round(n));
+const zl = n => NF.format(Math.round(n)) + ' zł';
+const pad = n => String(n).padStart(2,'0');
+const hm = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function pickW(list, wkey, r){const s=list.reduce((a,x)=>a+x[wkey],0);let v=(r||Math.random)()*s;for(const x of list){v-=x[wkey];if(v<=0)return x}return list[list.length-1]}
+function pickObj(obj, r){const e=Object.entries(obj);const s=e.reduce((a,x)=>a+x[1],0);let v=(r||Math.random)()*s;for(const [k,w] of e){v-=w;if(v<=0)return k}return e[e.length-1][0]}
+
+const PEAK = 520;               // wyszukiwań/s w szczycie (ok. 21:00)
+const BW_UPLIFT = 2.7;          // Black Week vs zwykły dzień
+const SEARCH_PER_BOOKING = 100000;
+const PROFILE = [.22,.13,.08,.06,.06,.09,.20,.36,.50,.60,.64,.66,.70,.68,.64,.66,.70,.74,.80,.90,.98,1,.82,.50];
+const CFG = {'2+0':38,'2+1':22,'2+2':17,'1+0':7,'3+0':5,'4+0':4,'1+1':4,'2+3':3};
+const FILTERS = {'All inclusive':.46,'Hotel 4* i więcej':.31,'Promocja Black Week':.27,'Przy plaży':.22,'First minute':.21,'Dla rodzin z dziećmi':.17,'Ocena 8+':.15,'Last minute':.14,'Aquapark':.12,'Dziecko gratis':.09,'Bezpłatna zmiana':.08,'Tylko dla dorosłych':.06};
+const MONTHS = [['2026-12','Gru'],['2027-01','Sty'],['2027-02','Lut'],['2027-03','Mar'],['2027-04','Kwi'],['2027-05','Maj'],['2027-06','Cze'],['2027-07','Lip'],['2027-08','Sie'],['2027-09','Wrz'],['2027-10','Paź']];
+const MONTH_W = {'2026-12':13,'2027-01':11,'2027-02':10,'2027-03':6,'2027-04':7,'2027-05':7,'2027-06':10,'2027-07':15,'2027-08':13,'2027-09':5,'2027-10':3};
+const DEVICE = {'Mobile':63,'Desktop':32,'Aplikacja':5};
+const ANY_DEST = .12, ANY_APT = .15;
+const PRICE = {Egipt:[3100,5200],Turcja:[3000,5600],Hiszpania:[3700,6200],Grecja:[3200,5200],Tunezja:[2800,4400],Cypr:[3400,5400],'Bułgaria':[2400,3800],Albania:[2600,4000],Maroko:[3600,5600],Portugalia:[4200,6400],'Wyspy Zielonego Przylądka':[5200,7600],ZEA:[4800,8200],Oman:[6200,9000],Tanzania:[8400,12800],Dominikana:[8200,12400],Meksyk:[8600,12600],Kuba:[7200,10400],Tajlandia:[7600,10800],Malediwy:[14000,21000],'Sri Lanka':[7400,10200]};
+const BOARD = {'All inclusive':70,'Ultra all inclusive':12,'Śniadania i obiadokolacje':12,'Śniadania':6};
+
+const COUNTRIES = [...new Set(MAP.dest.map(d=>d.country))];
+const CW = {}; MAP.dest.forEach(d=>CW[d.country]=(CW[d.country]||0)+d.w);
+const AW = {}; MAP.airports.forEach(a=>AW[a.code]=a.w);
+
+function profileAt(d){const h=d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;const i=Math.floor(h)%24,j=(i+1)%24,f=h-Math.floor(h);const s=f*f*(3-2*f);return PROFILE[i]*(1-s)+PROFILE[j]*s}
+let spike = {until:0, mult:1};
+function rateAt(d, noise=true){
+  let r = PEAK*profileAt(d);
+  if(noise){const t=d.getTime()/1000;r*=1+.05*Math.sin(t/7.3)+.04*Math.sin(t/2.1)+.03*Math.sin(t/31)}
+  if(d.getTime()<spike.until) r*=spike.mult;
+  return r;
+}
+
+const S = {
+  searchesToday:0, baselineToday:0, peak:{v:0,t:null},
+  hourly:new Array(24).fill(0), hourlyBase:new Array(24).fill(0),
+  perSec:[], secCount:0,
+  bookings:[], gmv:0, pax:0, bookByDest:{},
+  buckets:[], bookSpeed:1
+};
+function newBucket(min){return {min,total:0,country:{},cfg:{},flt:{},month:{},apt:{},dev:{},withAny:0}}
+function inc(o,k,v=1){o[k]=(o[k]||0)+v}
+
+function mockSearch(ts){
+  const any = Math.random()<ANY_DEST;
+  const dst = any?null:pickW(MAP.dest,'w');
+  const apt = Math.random()<ANY_APT?null:pickW(MAP.airports,'w');
+  const [a,c] = pickObj(CFG).split('+').map(Number);
+  const filters = Object.keys(FILTERS).filter(f=>Math.random()<FILTERS[f]);
+  return {ts, destCountry:dst&&dst.country, destCity:dst&&dst.city, airport:apt&&apt.code, adults:a, children:c, filters, month:pickObj(MONTH_W), device:pickObj(DEVICE)};
+}
+function mockBooking(ts, r){
+  r = r||Math.random;
+  const dst = pickW(MAP.dest,'w',r);
+  const apt = pickW(MAP.airports,'w',r);
+  let [a,c] = pickObj({'2+0':44,'2+1':24,'2+2':18,'1+0':5,'3+0':4,'1+1':3,'2+3':2},r).split('+').map(Number);
+  const nights = +pickObj({7:58,10:10,11:9,14:19,4:4},r);
+  const [lo,hi] = PRICE[dst.country]||[3500,6000];
+  const pp = (lo+(hi-lo)*r())*(nights/7)**.8;
+  const disc = r()<.7 ? Math.round(8+r()*17) : 0;
+  const price = Math.round((a*pp + c*pp*.45)*(1-disc/100)/10)*10;
+  return {ts, destCountry:dst.country, destCity:dst.city, airport:apt.code, adults:a, children:c, nights, board:pickObj(BOARD,r), stars:+pickObj({5:45,4:45,3:10},r), price, discountPct:disc};
+}
+
+function curBucket(ts){const m=Math.floor(ts/60000);let b=S.buckets[S.buckets.length-1];if(!b||b.min!==m){b=newBucket(m);S.buckets.push(b);while(S.buckets.length>16)S.buckets.shift()}return b}
+function ingestSearch(e, draw){
+  S.searchesToday++; S.secCount++;
+  S.hourly[new Date(e.ts).getHours()]++;
+  const b=curBucket(e.ts); b.total++;
+  if(e.destCountry) inc(b.country,e.destCountry); else b.withAny++;
+  inc(b.cfg,e.adults+'+'+e.children); inc(b.month,e.month); inc(b.dev,e.device);
+  if(e.airport) inc(b.apt,e.airport);
+  e.filters.forEach(f=>inc(b.flt,f));
+  if(draw) FX.search(e);
+}
+function ingestBooking(e, live){
+  S.bookings.push(e); S.gmv+=e.price; S.pax+=e.adults+e.children;
+  inc(S.bookByDest,e.destCity);
+  if(live){FX.booking(e); addFeed(e,true)}
+}
+window.ResabeeLive = {ingestSearch:e=>ingestSearch(e,true), ingestBooking:e=>ingestBooking(e,true), state:S};
+
+function seedHistory(){
+  const now=new Date(), mid=new Date(now); mid.setHours(0,0,0,0);
+  const r=mulberry(mid.getTime()/1000|0);
+  let peak=0, peakT=null;
+  for(let t=mid.getTime(); t<now.getTime()-1000; t+=60000){
+    const d=new Date(t), span=Math.min(60000, now.getTime()-t)/1000;
+    const rate=rateAt(d), n=rate*span;
+    S.searchesToday+=n; S.hourly[d.getHours()]+=n;
+    S.baselineToday+=n/BW_UPLIFT;
+    const pk=rate*(1.02+r()*.06); if(pk>peak){peak=pk;peakT=d}
+    // rezerwacje: proces Poissona proporcjonalny do ruchu
+    let lam=n/SEARCH_PER_BOOKING;
+    while(r()<lam){ingestBooking(mockBooking(t+r()*span*1000,r),false); lam-=1}
+  }
+  S.peak={v:peak,t:peakT};
+  for(let h=0;h<24;h++){let s=0;for(let m=0;m<60;m+=5){const d=new Date(mid);d.setHours(h,m);s+=rateAt(d,false)*300}S.hourlyBase[h]=s/BW_UPLIFT}
+  // bufory 15 min - oczekiwane wartości z lekkim szumem
+  const nowMin=Math.floor(now.getTime()/60000);
+  for(let k=15;k>=1;k--){
+    const t=(nowMin-k)*60000, n=rateAt(new Date(t))*60, b=newBucket(nowMin-k), jit=()=>1+(r()-.5)*.16;
+    b.total=n; b.withAny=n*ANY_DEST;
+    const cs=Object.values(CW).reduce((a,x)=>a+x,0); for(const c in CW) b.country[c]=n*(1-ANY_DEST)*CW[c]/cs*jit();
+    const fs=Object.values(CFG).reduce((a,x)=>a+x,0); for(const c in CFG) b.cfg[c]=n*CFG[c]/fs*jit();
+    for(const f in FILTERS) b.flt[f]=n*FILTERS[f]*jit();
+    const ms=Object.values(MONTH_W).reduce((a,x)=>a+x,0); for(const m in MONTH_W) b.month[m]=n*MONTH_W[m]/ms*jit();
+    const as=Object.values(AW).reduce((a,x)=>a+x,0); for(const a in AW) b.apt[a]=n*(1-ANY_APT)*AW[a]/as*jit();
+    const ds=Object.values(DEVICE).reduce((a,x)=>a+x,0); for(const d in DEVICE) b.dev[d]=n*DEVICE[d]/ds*jit();
+    S.buckets.push(b);
+  }
+  for(let i=0;i<60;i++) S.perSec.push(rateAt(new Date(now.getTime()-(60-i)*1000))*(1+(r()-.5)*.08));
+  S.bookings.sort((a,b)=>a.ts-b.ts).slice(-8).forEach(e=>addFeed(e,false));
+}
+
+let carry=0, lastSec=Math.floor(Date.now()/1000), warm=true;
+function mockTick(){
+  const now=Date.now(), d=new Date(now);
+  if(now>spike.until && Math.random()<.0009){spike={until:now+60000+Math.random()*120000, mult:1.25+Math.random()*.25}}
+  const rate=rateAt(d);
+  carry+=rate*.1; const n=Math.floor(carry); carry-=n;
+  const drawP=Math.min(1, 26/rate);
+  for(let i=0;i<n;i++) ingestSearch(mockSearch(now-Math.random()*100), Math.random()<drawP);
+  S.baselineToday+=rate*.1/BW_UPLIFT;
+  // rezerwacje
+  const lam=rate*.1/SEARCH_PER_BOOKING*S.bookSpeed;
+  if(Math.random()<lam) ingestBooking(mockBooking(now),true);
+  const sec=Math.floor(now/1000);
+  if(sec!==lastSec){
+    const v=S.secCount/(sec-lastSec); if(warm){warm=false;S.secCount=0;lastSec=sec;return} S.perSec.push(v); while(S.perSec.length>60)S.perSec.shift();
+    if(v>S.peak.v) S.peak={v,t:new Date(now)};
+    S.secCount=0; lastSec=sec;
+  }
+}
+
+const cvs=document.getElementById('fx'), ctx=cvs.getContext('2d');
+let T={s:1,ox:0,oy:0,dpr:1};
+function resize(){
+  const r=cvs.parentElement.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
+  cvs.width=r.width*dpr; cvs.height=r.height*dpr;
+  const s=Math.min(r.width/MAP.W, r.height/MAP.H);
+  T={s, ox:(r.width-MAP.W*s)/2, oy:(r.height-MAP.H*s)/2, dpr};
+}
+window.addEventListener('resize',resize);
+const P=(x,y)=>[(T.ox+x*T.s)*T.dpr,(T.oy+y*T.s)*T.dpr];
+const destBy={}; MAP.dest.forEach(d=>destBy[d.city]=d);
+const aptBy={}; MAP.airports.forEach(a=>aptBy[a.code]=a);
+const FX={
+  pings:[], arcs:[], books:[],
+  search(e){
+    if(this.pings.length>220) return;
+    const d=e.destCity&&destBy[e.destCity]; if(!d) return;
+    this.pings.push({x:d.x,y:d.y,t:performance.now()});
+    if(e.airport && Math.random()<.35){const a=aptBy[e.airport]; this.arcs.push({a,d,t:performance.now()})}
+  },
+  booking(e){
+    const d=destBy[e.destCity], a=aptBy[e.airport]; if(!d||!a) return;
+    this.books.push({a,d,t:performance.now(),label:e.destCity+' · '+zl(e.price)});
+  }
+};
+function ctrl(a,d){const mx=(a.x+d.x)/2,my=(a.y+d.y)/2,dx=d.x-a.x,dy=d.y-a.y,len=Math.hypot(dx,dy);const k=.22;return [mx+dy/len*len*k*(dx>0?-1:1)*.3, my-len*k]}
+function qpt(a,c,d,t){const u=1-t;return [u*u*a.x+2*u*t*c[0]+t*t*d.x, u*u*a.y+2*u*t*c[1]+t*t*d.y]}
+function drawArc(a,d,t0,t1,style,w){
+  const c=ctrl(a,d); ctx.beginPath();
+  for(let i=0;i<=24;i++){const t=t0+(t1-t0)*i/24;const [x,y]=qpt(a,c,d,t);const [px,py]=P(x,y);i?ctx.lineTo(px,py):ctx.moveTo(px,py)}
+  ctx.strokeStyle=style; ctx.lineWidth=w*T.dpr; ctx.stroke();
+}
+function render(now){
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  const s=T.s*T.dpr;
+  // kierunki: stałe kropki + rezerwacje dziś
+  for(const d of MAP.dest){
+    const [x,y]=P(d.x,d.y); const nb=S.bookByDest[d.city]||0;
+    ctx.beginPath(); ctx.arc(x,y,(1.6+d.w*.12)*s,0,7); ctx.fillStyle='rgba(167,169,172,.55)'; ctx.fill();
+    if(nb){ctx.beginPath(); ctx.arc(x,y,(2+Math.sqrt(nb)*1.3)*s,0,7); ctx.strokeStyle='rgba(243,28,42,.65)'; ctx.lineWidth=1.2*T.dpr; ctx.stroke()}
+    if(d.edge){ctx.font=`${10*T.dpr}px Poppins, Arial`;ctx.fillStyle='rgba(167,169,172,.8)';ctx.textAlign=d.edge==='W'?'left':'right';ctx.textBaseline='middle';ctx.fillText((d.edge==='W'?'← ':'')+d.city+(d.edge==='E'?' →':''), x+(d.edge==='W'?8:-8)*T.dpr, y)}
+  }
+  // lotniska
+  for(const a of MAP.airports){const [x,y]=P(a.x,a.y);ctx.beginPath();ctx.arc(x,y,2.2*s,0,7);ctx.fillStyle='#fff';ctx.fill()}
+  // łuki wyszukiwań
+  FX.arcs=FX.arcs.filter(o=>now-o.t<1400);
+  for(const o of FX.arcs){const p=(now-o.t)/1400;drawArc(o.a,o.d,Math.max(0,p-.35),Math.min(1,p),`rgba(255,255,255,${.3*(1-p)})`,.9)}
+  // pingi
+  FX.pings=FX.pings.filter(o=>now-o.t<1000);
+  for(const o of FX.pings){const p=(now-o.t)/1000;const [x,y]=P(o.x,o.y);ctx.beginPath();ctx.arc(x,y,(2.5+p*12)*s,0,7);ctx.strokeStyle=`rgba(255,255,255,${.9*(1-p)})`;ctx.lineWidth=1.3*T.dpr;ctx.stroke()}
+  // rezerwacje
+  FX.books=FX.books.filter(o=>now-o.t<9000);
+  for(const o of FX.books){
+    const age=(now-o.t)/1000, prog=Math.min(1,age/1.8);
+    const fade=age>6?1-(age-6)/3:1;
+    drawArc(o.a,o.d,0,prog,`rgba(243,28,42,${.9*fade})`,2);
+    if(prog<1){const [hx,hy]=qpt(o.a,ctrl(o.a,o.d),o.d,prog);const [x,y]=P(hx,hy);ctx.beginPath();ctx.arc(x,y,3.5*s,0,7);ctx.fillStyle='#F31C2A';ctx.fill()}
+    else{
+      const [x,y]=P(o.d.x,o.d.y);
+      for(let k=0;k<3;k++){const q=((age-1.8)*.7+k/3)%1;ctx.beginPath();ctx.arc(x,y,(4+q*26)*s,0,7);ctx.strokeStyle=`rgba(243,28,42,${(1-q)*.8*fade})`;ctx.lineWidth=1.5*T.dpr;ctx.stroke()}
+      ctx.beginPath();ctx.arc(x,y,4.5*s,0,7);ctx.fillStyle=`rgba(243,28,42,${fade})`;ctx.fill();
+      ctx.font=`600 ${13*T.dpr}px Poppins, Arial`;ctx.textBaseline='middle';
+      const tx=o.d.edge==='E'?x-14*T.dpr:x+14*T.dpr; ctx.textAlign=o.d.edge==='E'?'right':'left';
+      const w=ctx.measureText(o.label).width;
+      ctx.fillStyle=`rgba(35,31,32,${.85*fade})`;ctx.fillRect(o.d.edge==='E'?tx-w-8*T.dpr:tx-6*T.dpr,y-12*T.dpr,w+14*T.dpr,24*T.dpr);
+      ctx.fillStyle=`rgba(255,255,255,${fade})`;ctx.fillText(o.label,tx,y);
+    }
+  }
+}
+
+const $=id=>document.getElementById(id);
+const shown={search:0,gmv:0};
+function lerpTo(k,target,el,f){shown[k]+= (target-shown[k])*.12; if(Math.abs(target-shown[k])<1)shown[k]=target; el.textContent=f(shown[k])}
+function addFeed(e,isNew){
+  const li=document.createElement('li'); if(isNew) li.className='new';
+  const d=new Date(e.ts);
+  li.innerHTML=`<div class="top"><div class="dst">${e.destCity} <span>${e.destCountry}</span></div><div class="pr">${zl(e.price)}</div></div>
+  <div class="meta"><span>${hm(d)}</span><span>${e.adults}+${e.children}</span><span>${e.nights} nocy</span><span>${e.stars}* ${e.board==='All inclusive'?'AI':e.board==='Ultra all inclusive'?'UAI':e.board}</span><span>wylot ${e.airport}</span>${e.discountPct?`<span class="disc">-${e.discountPct}%</span>`:''}</div>`;
+  const f=$('feed'); f.prepend(li); while(f.children.length>9) f.lastChild.remove();
+  if(isNew) setTimeout(()=>li.classList.remove('new'),8000);
+}
+function agg(key,from=0){const o={};let tot=0;for(const b of S.buckets.slice(from)){tot+=b.total;for(const k in b[key])o[k]=(o[k]||0)+b[key][k]}return {o,tot}}
+function bars(el,rows,opts={}){
+  const max=Math.max(...rows.map(r=>r.v));
+  el.innerHTML=rows.map(r=>`<div class="br${r.hl?' hl':''}"><div class="k" title="${r.k}">${r.k}</div><div class="b"><i style="width:${(r.v/max*100).toFixed(1)}%"></i></div><div class="v">${r.v.toFixed(r.v<10?1:0)}<small>%</small>${r.tr||''}</div></div>`).join('');
+}
+function sparkline(){
+  const el=$('spark'), r=el.getBoundingClientRect(), w=r.width, h=r.height; if(!w)return;
+  const v=S.perSec, mx=Math.max(...v)*1.1, mn=Math.min(...v)*.85;
+  const pts=v.map((y,i)=>[i/(v.length-1)*w, h-(y-mn)/(mx-mn)*h]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('');
+  el.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  const last=pts[pts.length-1];
+  el.innerHTML=`<path d="${line}L${w},${h}L0,${h}Z" fill="rgba(255,255,255,.06)"/><path d="${line}" fill="none" stroke="#fff" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="3.5" fill="#F31C2A"/>`;
+}
+function hourlyChart(){
+  const el=$('hsvg'), r=el.getBoundingClientRect(), w=r.width, h=r.height; if(!w)return;
+  el.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  const nowH=new Date().getHours(), mx=Math.max(...S.hourly, ...S.hourlyBase)*1.08, bh=h-16, bw=w/24;
+  let s='';
+  for(let i=0;i<24;i++){
+    const v=S.hourly[i], y=bh-v/mx*bh;
+    if(i<=nowH) s+=`<rect x="${i*bw+1.5}" y="${y}" width="${bw-3}" height="${bh-y}" rx="2" fill="${i===nowH?'#F31C2A':'#A7A9AC'}"/>`;
+    if(i%3===0) s+=`<text x="${i*bw+bw/2}" y="${h-2}" fill="#58595B" font-size="9" text-anchor="middle">${i}</text>`;
+  }
+  const bl=S.hourlyBase.map((v,i)=>(i?'L':'M')+(i*bw+bw/2).toFixed(1)+','+(bh-v/mx*bh).toFixed(1)).join('');
+  s+=`<path d="${bl}" fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray="3 3" opacity=".7"/>`;
+  s+=`<text x="${w-2}" y="10" fill="#A7A9AC" font-size="9" text-anchor="end">- - zwykły poniedziałek</text>`;
+  el.innerHTML=s;
+}
+function seasonChart(){
+  const el=$('ssvg'), r=el.getBoundingClientRect(), w=r.width, h=r.height; if(!w)return;
+  el.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  const {o,tot}=agg('month'); const vals=MONTHS.map(([k,l])=>({k,l,v:(o[k]||0)/tot*100}));
+  const mx=Math.max(...vals.map(v=>v.v))*1.2, bw=w/vals.length, bh=h-16;
+  let s='';
+  vals.forEach((m,i)=>{const summer=/-0[678]$/.test(m.k);const y=bh-m.v/mx*bh;
+    s+=`<rect x="${i*bw+3}" y="${y}" width="${bw-6}" height="${bh-y}" rx="2" fill="${summer?'#F31C2A':'#A7A9AC'}"/>`;
+    s+=`<text x="${i*bw+bw/2}" y="${y-4}" fill="#fff" font-size="9" text-anchor="middle">${Math.round(m.v)}</text>`;
+    s+=`<text x="${i*bw+bw/2}" y="${h-2}" fill="#58595B" font-size="9" text-anchor="middle">${m.l}</text>`});
+  el.innerHTML=s;
+  const summer=vals.filter(v=>/-0[678]$/.test(v.k)).reduce((a,v)=>a+v.v,0);
+  const winter=vals.filter(v=>/2026-12|2027-0[12]/.test(v.k)).reduce((a,v)=>a+v.v,0);
+  $('sHead').innerHTML=`<em>${Math.round(summer)}%</em> szuka już lata 2027, ${Math.round(winter)}% zimy`;
+}
+function panels(){
+  // kierunki z trendem (ostatnie 5 min vs wcześniejsze 10)
+  const A=agg('country'), N=agg('country',-5), O={o:{},tot:0};
+  S.buckets.slice(0,-5).forEach(b=>{O.tot+=b.total;for(const k in b.country)O.o[k]=(O.o[k]||0)+b.country[k]});
+  const rows=Object.entries(A.o).map(([k,v])=>{const sN=(N.o[k]||0)/N.tot, sO=(O.o[k]||0)/O.tot;const d=sO?(sN/sO-1):0;
+    return {k,v:v/A.tot*100,tr:Math.abs(d)>.04?`<span class="${d>0?'tr-up':'tr-dn'}"> ${d>0?'▲':'▼'}</span>`:''}}).sort((a,b)=>b.v-a.v).slice(0,7);
+  bars($('bDest'),rows);
+  const C=agg('cfg'); bars($('bCfg'),Object.entries(C.o).map(([k,v])=>({k,v:v/C.tot*100})).sort((a,b)=>b.v-a.v).slice(0,7));
+  const F=agg('flt'); bars($('bFlt'),Object.entries(F.o).map(([k,v])=>({k,v:v/F.tot*100,hl:k==='Promocja Black Week'})).sort((a,b)=>b.v-a.v).slice(0,7));
+  const Ap=agg('apt'); const at=Object.values(Ap.o).reduce((a,x)=>a+x,0);
+  const ar=Object.entries(Ap.o).sort((a,b)=>b[1]-a[1]).slice(0,6); const amx=ar[0][1];
+  $('aptRows').innerHTML=ar.map(([k,v])=>`<div class="row"><span>${k}</span><div class="bar"><i style="width:${v/amx*100}%"></i></div><span style="text-align:right">${Math.round(v/at*100)}%</span></div>`).join('');
+  const D=agg('dev'); $('kMob').textContent=Math.round((D.o.Mobile||0)/D.tot*100)+'%'; $('kDesk').textContent=Math.round((D.o.Desktop||0)/D.tot*100)+'%';
+  seasonChart();
+}
+function kpis(){
+  const nb=S.bookings.length;
+  $('kBook').textContent=fmt(nb);
+  $('kPax').textContent=fmt(S.pax);
+  $('kAvg').textContent=nb?zl(S.gmv/nb):'-';
+  $('kRatio').textContent=nb?fmt(S.searchesToday/nb):'-';
+  const last=S.bookings[S.bookings.length-1]; $('kLast').textContent=last?hm(new Date(last.ts)):'-';
+  const up=S.searchesToday/S.baselineToday-1; $('kUplift').textContent=(up>=0?'+':'')+Math.round(up*100)+'%';
+  $('kPeak').textContent=fmt(S.peak.v)+'/s'+(S.peak.t?' o '+hm(S.peak.t):'');
+  const rate=S.perSec.slice(-5).reduce((a,x)=>a+x,0)/5;
+  const every=SEARCH_PER_BOOKING/(rate*S.bookSpeed);
+  $('kEvery').textContent=every<60?Math.round(every)+' s':Math.round(every/60)+' min';
+  $('hHead').innerHTML=`Dziś <em>${(up>=0?'+':'')+Math.round(up*100)}%</em> wyszukiwań vs zwykły poniedziałek`;
+}
+function header(){
+  const d=new Date(); $('clock').textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  const start=new Date(2026,10,23), day=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-start)/864e5)+1;
+  const dd=Math.min(8,Math.max(1,day)); $('bwday').textContent=`Dzień ${dd} z 8`;
+  $('daybar').innerHTML=Array.from({length:8},(_,i)=>`<span class="${i+1<dd?'done':i+1===dd?'on':''}"></span>`).join('');
+}
+['spd1','spd8'].forEach(id=>$(id).onclick=()=>{S.bookSpeed=id==='spd8'?8:1;$('spd1').classList.toggle('on',S.bookSpeed===1);$('spd8').classList.toggle('on',S.bookSpeed===8)});
+
+seedHistory(); resize(); header(); kpis(); panels(); sparkline(); hourlyChart();
+setInterval(mockTick,100);
+setInterval(()=>{header();kpis();sparkline()},1000);
+setInterval(()=>{panels();hourlyChart()},3000);
+(function frame(now){
+  lerpTo('search',S.searchesToday,$('kSearch'),fmt);
+  lerpTo('gmv',S.gmv,$('kGmv'),zl);
+  const rate=S.perSec.length?S.perSec[S.perSec.length-1]:0; $('kRate').textContent=fmt(rate);
+  render(now); requestAnimationFrame(frame);
+})(performance.now());
+setTimeout(()=>{if(!S.bookings.length||Date.now()-S.bookings[S.bookings.length-1].ts>90000)ingestBooking(mockBooking(Date.now()),true)},4000);
+</script>
+<script>
+(async()=>{try{
+const topo=await (await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')).json();
+const proj=d3.geoMercator().scale(461.1146).translate([355.1366,607.2686]).clipExtent([[-5,-5],[1005,685]]);
+const path=d3.geoPath(proj);
+document.getElementById('map').innerHTML=topojson.feature(topo,topo.objects.countries).features.map(f=>{const d=path(f);return d?'<path d="'+d+'"'+(f.properties.name==='Poland'?' class="pl"':'')+'/>':''}).join('');
+}catch(e){console.warn('map',e)}})();
+</script>
+</body>
+</html>
