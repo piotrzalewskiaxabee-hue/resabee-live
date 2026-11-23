@@ -112,14 +112,49 @@ footer button{font:inherit;font-size:10px;letter-spacing:.08em;text-transform:up
 footer button.on{color:#fff;border-color:var(--red)}
 
 @media (max-width:1100px){
-  html,body{overflow:auto}
-  body{grid-template-columns:1fr;grid-template-rows:auto;height:auto}
-  header{flex-wrap:wrap}
-  #kpis,#mapwrap,#feedp,#hourly,#mid,#season{grid-column:1;grid-row:auto}
-  #mapwrap{height:60vh}
-  #mid{grid-template-columns:1fr}
-  #feedp{height:520px}
+  html,body{overflow-x:hidden;overflow-y:auto;height:auto}
+  body{grid-template-columns:minmax(0,1fr);grid-template-rows:none;height:auto;gap:10px;padding:12px}
+  header{flex-wrap:wrap;gap:10px 16px}
+  .bw{flex-wrap:wrap;gap:8px 14px}
+  #kpis,#mapwrap,#feedp,#hourly,#mid,#season,footer{grid-column:1;grid-row:auto}
+  #kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  #kpis .hero,#kpis .kpirow{grid-column:1/-1}
+  .spark{flex:none;height:70px}
+  #mapwrap{height:auto;aspect-ratio:1000/680}
+  #mid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #feedp{height:auto}
+  #feed li:nth-child(n+6){display:none}
   #hourly,#season{height:260px}
+  footer{flex-direction:column;align-items:flex-start;gap:8px;padding-bottom:8px}
+  footer>div{flex-wrap:wrap;row-gap:8px}
+  footer button{white-space:nowrap}
+}
+@media (max-width:700px){
+  body{padding:10px;gap:10px}
+  .brand{gap:10px;flex-wrap:wrap}
+  .brand h1 img{height:34px!important}
+  .bw{width:100%;justify-content:space-between}
+  .bwtag{font-size:11px;padding:5px 11px}
+  .bwinfo{order:3;width:100%;white-space:normal;font-size:11px}
+  .clock{font-size:22px}
+  .panel{border-radius:12px;padding:12px 14px}
+  .kpi .val{font-size:26px}
+  .kpi.hero .val{font-size:40px}
+  .kpi .sub{font-size:11px}
+  .kpirow{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .kpirow .kpi .val{font-size:22px}
+  .kpi .lbl{font-size:10px}
+  #apt,#edgeE{display:none}
+  #rate{top:10px;right:12px}
+  #rate .n{font-size:28px}
+  #rate .t{font-size:9px}
+  #legend{bottom:8px;left:12px;gap:10px;font-size:10px}
+  #mid{grid-template-columns:minmax(0,1fr)}
+  #feed .dst{font-size:13px}
+  #feed .pr{font-size:14px}
+  #hourly,#season{height:230px}
+  .headline{font-size:13px}
+  .br{grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr) 48px}
 }
 </style>
 </head>
