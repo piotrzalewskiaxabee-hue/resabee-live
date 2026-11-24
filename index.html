@@ -85,6 +85,13 @@ header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-be
 #feed .pr{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
 #feed .meta{font-size:11px;color:var(--muted);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
 #feed .disc{color:#fff;background:var(--red);border-radius:4px;padding:0 5px;font-weight:600}
+#stream{list-style:none;display:flex;flex-direction:column;gap:6px;overflow:hidden;flex:1;font-size:12px}
+#stream li{display:grid;grid-template-columns:62px minmax(0,1fr);column-gap:8px;padding:7px 10px;border-radius:8px;background:#2F2B2C;border-left:2px solid var(--line);animation:slide .5s ease-out}
+#stream li.promo{border-left-color:var(--red)}
+#stream .tm{grid-row:span 2;color:var(--g1);font-variant-numeric:tabular-nums;padding-top:1px}
+#stream .d{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stream .d span{font-weight:300;color:var(--muted)}
+#stream .m{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #nextb{font-size:11px;color:var(--muted);margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
 
 #hourly{grid-column:1;grid-row:3;display:flex;flex-direction:column}
@@ -123,7 +130,7 @@ footer button.on{color:#fff;border-color:var(--red)}
   #mapwrap{height:auto;aspect-ratio:1000/680}
   #mid{grid-template-columns:repeat(3,minmax(0,1fr))}
   #feedp{height:auto}
-  #feed li:nth-child(n+6){display:none}
+  #stream li:nth-child(n+9){display:none}
   #hourly,#season{height:260px}
   footer{flex-direction:column;align-items:flex-start;gap:8px;padding-bottom:8px}
   footer>div{flex-wrap:wrap;row-gap:8px}
@@ -150,8 +157,6 @@ footer button.on{color:#fff;border-color:var(--red)}
   #rate .t{font-size:9px}
   #legend{bottom:8px;left:12px;gap:10px;font-size:10px}
   #mid{grid-template-columns:minmax(0,1fr)}
-  #feed .dst{font-size:13px}
-  #feed .pr{font-size:14px}
   #hourly,#season{height:230px}
   .headline{font-size:13px}
   .br{grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr) 48px}
@@ -176,22 +181,16 @@ footer button.on{color:#fff;border-color:var(--red)}
   <div class="panel kpi hero">
     <div class="lbl">Wyszukiwania dziś</div>
     <div class="val" id="kSearch">0</div>
-    <div class="sub"><b id="kUplift">+0%</b> vs zwykły poniedziałek o tej porze</div>
+    <div class="sub"><b id="kUplift">+0%</b> vs <span id="kNorm">zwykły dzień</span> o tej porze</div>
     <svg class="spark" id="spark" preserveAspectRatio="none"></svg>
-    <div class="sub">Wyszukiwania na sekundę · ostatnie 60 s · rekord dnia <b id="kPeak">0/s</b></div>
-  </div>
-  <div class="panel kpi">
-    <div class="lbl">Rezerwacje dziś</div>
-    <div class="val red" id="kBook">0</div>
-    <div class="sub"><b id="kPax">0</b> uczestników · ostatnia <b id="kLast">-</b></div>
-  </div>
-  <div class="panel kpi">
-    <div class="lbl">Wartość rezerwacji dziś</div>
-    <div class="val" id="kGmv">0 zł</div>
-    <div class="sub">średnio <b id="kAvg">0 zł</b> za rezerwację</div>
+    <div class="sub">Wyszukiwania na sekundę · ostatnie 60 s</div>
   </div>
   <div class="kpirow">
-    <div class="panel kpi"><div class="lbl">Wyszukiwań na 1 rezerwację</div><div class="val" id="kRatio">0</div></div>
+    <div class="panel kpi"><div class="lbl">Ostatnia minuta</div><div class="val" id="kMin">0</div><div class="sub">wyszukiwań</div></div>
+    <div class="panel kpi"><div class="lbl">Szczyt dnia</div><div class="val" id="kPeakV">0/s</div><div class="sub">o godz. <b id="kPeakT">-</b></div></div>
+  </div>
+  <div class="kpirow">
+    <div class="panel kpi"><div class="lbl">Z dziećmi</div><div class="val" id="kKids">0%</div><div class="sub">wyszukiwań · 15 min</div></div>
     <div class="panel kpi"><div class="lbl">Ruch mobile</div><div class="val" id="kMob">0%</div><div class="sub">desktop <b id="kDesk">0%</b></div></div>
   </div>
 </section>
@@ -203,15 +202,15 @@ footer button.on{color:#fff;border-color:var(--red)}
   <div id="rate"><div class="n" id="kRate">0</div><div class="t">wyszukiwań / s</div></div>
   <div class="mapov" id="legend">
     <span><i style="background:#fff"></i>wyszukiwanie (próbka)</span>
-    <span><i style="background:var(--red)"></i>rezerwacja</span>
+    <span><i style="background:var(--red)"></i>top 3 kraje · 15 min</span>
   </div>
   <div class="mapov" id="edgeE">Karaiby i Azja przypięte do krawędzi mapy</div>
 </section>
 
 <section class="panel" id="feedp">
-  <div class="ptitle">Nowe rezerwacje <small>na żywo</small></div>
-  <ul id="feed"></ul>
-  <div id="nextb">Średnio nowa rezerwacja co <b id="kEvery" style="color:#fff">-</b> przy obecnym ruchu</div>
+  <div class="ptitle">Wyszukiwania na żywo <small>próbka strumienia</small></div>
+  <ul id="stream"></ul>
+  <div id="nextb">Pokazujemy 1 z ok. <b id="kSample" style="color:#fff">-</b> zapytań · czerwony znacznik = filtr Promocja Black Week</div>
 </section>
 
 <section class="panel" id="hourly">
@@ -233,10 +232,8 @@ footer button.on{color:#fff;border-color:var(--red)}
 </section>
 
 <footer>
-  <div>Dane symulowane na potrzeby prezentacji. Wersja produkcyjna: zasilanie z API Resabee (zdarzenia search i booking).</div>
+  <div>Dane symulowane na potrzeby prezentacji. Wersja produkcyjna: zasilanie z API Resabee (strumień zdarzeń wyszukiwania).</div>
   <div style="display:flex;gap:14px;align-items:center">
-    <span>Tempo rezerwacji:</span>
-    <button id="spd1" class="on">realne</button><button id="spd8">pokazowe x8</button>
     <span class="pw">powered by <svg role="img" aria-label="axabee" xmlns="http://www.w3.org/2000/svg" viewBox="151.8 150.9 562.5 98.3"><title>axabee</title><path fill="#F31C2A" d="M269.5,203.3c-1-0.1-2.1-0.2-3.2-0.2c-12.4,0-22.6-10.2-22.6-22.7c0-1.1-0.1-2.1-0.2-3.2 c-1.5-11.2-11.2-19.9-22.9-19.9c-11.7,0-21.4,8.7-22.9,20c-0.1,1-0.2,2-0.2,3.1c0,12.5-10.2,22.7-22.7,22.7c-1.1,0-2.1,0.1-3.2,0.2 c-11.2,1.5-19.8,11.2-19.8,22.8c0,12.7,10.3,23.1,23,23.1c11.7,0,21.4-8.7,22.9-20c0.1-1,0.2-2,0.2-3.1c0-12.4,10.2-22.6,22.7-22.6 c12.5,0,22.7,10.1,22.7,22.6c0,1.1,0.1,2.1,0.2,3.2c1.5,11.2,11.2,19.9,22.8,19.9c12.7,0,23.1-10.4,23.1-23.1 C289.4,214.4,280.8,204.8,269.5,203.3z"/><path fill="#FFFFFF" d="M372.3,174.2l-0.1,58.4H357v-7.9c-4,5.5-10.1,9.1-18.3,9.1c-15.3,0-26.7-12.5-26.7-30.5 c0-18.1,11.6-30.5,26.6-30.5c8.3,0,14.4,3.8,18.5,9.4v-8.2H372.3z M357.1,203.4c0-9.6-6.5-16-15-16s-14.8,6.5-14.8,16 c0,9.7,6.4,16,14.8,16C350.7,219.4,357.1,213.1,357.1,203.4z"/><path fill="#FFFFFF" d="M422.4,232.6l-12-18.4L399,232.6h-18.3l20.6-30.2l-19.5-28.3h18.1l11.1,17.1l10.3-17.1h18.3l-19.5,28.7 l20.5,29.7H422.4z"/><path fill="#FFFFFF" d="M502.9,174.2l-0.1,58.4h-15.2v-7.9c-4,5.5-10.1,9.1-18.3,9.1c-15.3,0-26.7-12.5-26.7-30.5 c0-18.1,11.6-30.5,26.5-30.5c8.3,0,14.4,3.8,18.5,9.4v-8.2H502.9z M487.7,203.4c0-9.6-6.5-16-15-16c-8.5,0-14.8,6.5-14.8,16 c0,9.7,6.4,16,14.8,16C481.2,219.4,487.7,213.1,487.7,203.4z"/><path fill="#FFFFFF" d="M575.3,203.4c0,18-11.5,30.5-26.7,30.5c-8.3,0-14.3-3.6-18.5-9.1v7.9H515v-81.8h15.2v31.5 c4-5.6,10.3-9.4,18.5-9.4C563.6,172.9,575.3,185.3,575.3,203.4z M559.9,203.4c0-9.6-6.3-16-14.8-16c-8.5,0-15,6.5-15,16 c0,9.7,6.5,16,15,16C553.5,219.4,559.9,213.1,559.9,203.4z"/><path fill="#FFFFFF" d="M644.9,207.3H600c1,9.3,7.3,14,15.2,14c5.8,0,10.9-2.7,13-7.3h15.7c-4.4,13.8-16,19.9-28.6,19.9 c-18.3,0-30.8-13-30.8-30.4c0-17.5,12.6-30.6,30.5-30.6C634.4,172.9,646.4,188.1,644.9,207.3z M600.8,196.2h27.9 c-1.7-6.4-6.5-10.7-13.8-10.7C607.5,185.4,602.7,189.9,600.8,196.2z"/><path fill="#FFFFFF" d="M714.1,207.3h-44.8c1,9.3,7.3,14,15.2,14c5.8,0,10.9-2.7,13-7.3h15.7c-4.4,13.8-16,19.9-28.6,19.9 c-18.3,0-30.8-13-30.8-30.4c0-17.5,12.6-30.6,30.5-30.6C703.6,172.9,715.6,188.1,714.1,207.3z M670.1,196.2H698 c-1.7-6.4-6.5-10.7-13.8-10.7C676.7,185.4,672,189.9,670.1,196.2z"/></svg></span>
   </div>
 </footer>
@@ -248,6 +245,8 @@ const fmt = n => NF.format(Math.round(n));
 const zl = n => NF.format(Math.round(n)) + ' zł';
 const pad = n => String(n).padStart(2,'0');
 const hm = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+const DOW = ['niedziela','poniedziałek','wtorek','środa','czwartek','piątek','sobota'];
+const normDay = () => {const n=DOW[new Date().getDay()];return (/a$/.test(n)?'zwykła ':'zwykły ')+n};
 
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function pickW(list, wkey, r){const s=list.reduce((a,x)=>a+x[wkey],0);let v=(r||Math.random)()*s;for(const x of list){v-=x[wkey];if(v<=0)return x}return list[list.length-1]}
@@ -255,7 +254,6 @@ function pickObj(obj, r){const e=Object.entries(obj);const s=e.reduce((a,x)=>a+x
 
 const PEAK = 520;               // wyszukiwań/s w szczycie (ok. 21:00)
 const BW_UPLIFT = 2.7;          // Black Week vs zwykły dzień
-const SEARCH_PER_BOOKING = 100000;
 const PROFILE = [.22,.13,.08,.06,.06,.09,.20,.36,.50,.60,.64,.66,.70,.68,.64,.66,.70,.74,.80,.90,.98,1,.82,.50];
 const CFG = {'2+0':38,'2+1':22,'2+2':17,'1+0':7,'3+0':5,'4+0':4,'1+1':4,'2+3':3};
 const FILTERS = {'All inclusive':.46,'Hotel 4* i więcej':.31,'Promocja Black Week':.27,'Przy plaży':.22,'First minute':.21,'Dla rodzin z dziećmi':.17,'Ocena 8+':.15,'Last minute':.14,'Aquapark':.12,'Dziecko gratis':.09,'Bezpłatna zmiana':.08,'Tylko dla dorosłych':.06};
@@ -263,9 +261,6 @@ const MONTHS = [['2026-12','Gru'],['2027-01','Sty'],['2027-02','Lut'],['2027-03'
 const MONTH_W = {'2026-12':13,'2027-01':11,'2027-02':10,'2027-03':6,'2027-04':7,'2027-05':7,'2027-06':10,'2027-07':15,'2027-08':13,'2027-09':5,'2027-10':3};
 const DEVICE = {'Mobile':63,'Desktop':32,'Aplikacja':5};
 const ANY_DEST = .12, ANY_APT = .15;
-const PRICE = {Egipt:[3100,5200],Turcja:[3000,5600],Hiszpania:[3700,6200],Grecja:[3200,5200],Tunezja:[2800,4400],Cypr:[3400,5400],'Bułgaria':[2400,3800],Albania:[2600,4000],Maroko:[3600,5600],Portugalia:[4200,6400],'Wyspy Zielonego Przylądka':[5200,7600],ZEA:[4800,8200],Oman:[6200,9000],Tanzania:[8400,12800],Dominikana:[8200,12400],Meksyk:[8600,12600],Kuba:[7200,10400],Tajlandia:[7600,10800],Malediwy:[14000,21000],'Sri Lanka':[7400,10200]};
-const BOARD = {'All inclusive':70,'Ultra all inclusive':12,'Śniadania i obiadokolacje':12,'Śniadania':6};
-
 const COUNTRIES = [...new Set(MAP.dest.map(d=>d.country))];
 const CW = {}; MAP.dest.forEach(d=>CW[d.country]=(CW[d.country]||0)+d.w);
 const AW = {}; MAP.airports.forEach(a=>AW[a.code]=a.w);
@@ -283,8 +278,7 @@ const S = {
   searchesToday:0, baselineToday:0, peak:{v:0,t:null},
   hourly:new Array(24).fill(0), hourlyBase:new Array(24).fill(0),
   perSec:[], secCount:0,
-  bookings:[], gmv:0, pax:0, bookByDest:{},
-  buckets:[], bookSpeed:1
+  buckets:[], top3:new Set()
 };
 function newBucket(min){return {min,total:0,country:{},cfg:{},flt:{},month:{},apt:{},dev:{},withAny:0}}
 function inc(o,k,v=1){o[k]=(o[k]||0)+v}
@@ -297,19 +291,6 @@ function mockSearch(ts){
   const filters = Object.keys(FILTERS).filter(f=>Math.random()<FILTERS[f]);
   return {ts, destCountry:dst&&dst.country, destCity:dst&&dst.city, airport:apt&&apt.code, adults:a, children:c, filters, month:pickObj(MONTH_W), device:pickObj(DEVICE)};
 }
-function mockBooking(ts, r){
-  r = r||Math.random;
-  const dst = pickW(MAP.dest,'w',r);
-  const apt = pickW(MAP.airports,'w',r);
-  let [a,c] = pickObj({'2+0':44,'2+1':24,'2+2':18,'1+0':5,'3+0':4,'1+1':3,'2+3':2},r).split('+').map(Number);
-  const nights = +pickObj({7:58,10:10,11:9,14:19,4:4},r);
-  const [lo,hi] = PRICE[dst.country]||[3500,6000];
-  const pp = (lo+(hi-lo)*r())*(nights/7)**.8;
-  const disc = r()<.7 ? Math.round(8+r()*17) : 0;
-  const price = Math.round((a*pp + c*pp*.45)*(1-disc/100)/10)*10;
-  return {ts, destCountry:dst.country, destCity:dst.city, airport:apt.code, adults:a, children:c, nights, board:pickObj(BOARD,r), stars:+pickObj({5:45,4:45,3:10},r), price, discountPct:disc};
-}
-
 function curBucket(ts){const m=Math.floor(ts/60000);let b=S.buckets[S.buckets.length-1];if(!b||b.min!==m){b=newBucket(m);S.buckets.push(b);while(S.buckets.length>16)S.buckets.shift()}return b}
 function ingestSearch(e, draw){
   S.searchesToday++; S.secCount++;
@@ -320,13 +301,10 @@ function ingestSearch(e, draw){
   if(e.airport) inc(b.apt,e.airport);
   e.filters.forEach(f=>inc(b.flt,f));
   if(draw) FX.search(e);
+  if(Math.random()<SP) addStream(e);
 }
-function ingestBooking(e, live){
-  S.bookings.push(e); S.gmv+=e.price; S.pax+=e.adults+e.children;
-  inc(S.bookByDest,e.destCity);
-  if(live){FX.booking(e); addFeed(e,true)}
-}
-window.ResabeeLive = {ingestSearch:e=>ingestSearch(e,true), ingestBooking:e=>ingestBooking(e,true), state:S};
+let SP=0;
+window.ResabeeLive = {ingestSearch:e=>ingestSearch(e,true), state:S};
 
 function seedHistory(){
   const now=new Date(), mid=new Date(now); mid.setHours(0,0,0,0);
@@ -338,9 +316,6 @@ function seedHistory(){
     S.searchesToday+=n; S.hourly[d.getHours()]+=n;
     S.baselineToday+=n/BW_UPLIFT;
     const pk=rate*(1.02+r()*.06); if(pk>peak){peak=pk;peakT=d}
-    // rezerwacje: proces Poissona proporcjonalny do ruchu
-    let lam=n/SEARCH_PER_BOOKING;
-    while(r()<lam){ingestBooking(mockBooking(t+r()*span*1000,r),false); lam-=1}
   }
   S.peak={v:peak,t:peakT};
   for(let h=0;h<24;h++){let s=0;for(let m=0;m<60;m+=5){const d=new Date(mid);d.setHours(h,m);s+=rateAt(d,false)*300}S.hourlyBase[h]=s/BW_UPLIFT}
@@ -358,7 +333,6 @@ function seedHistory(){
     S.buckets.push(b);
   }
   for(let i=0;i<60;i++) S.perSec.push(rateAt(new Date(now.getTime()-(60-i)*1000))*(1+(r()-.5)*.08));
-  S.bookings.sort((a,b)=>a.ts-b.ts).slice(-8).forEach(e=>addFeed(e,false));
 }
 
 let carry=0, lastSec=Math.floor(Date.now()/1000), warm=true;
@@ -370,9 +344,7 @@ function mockTick(){
   const drawP=Math.min(1, 26/rate);
   for(let i=0;i<n;i++) ingestSearch(mockSearch(now-Math.random()*100), Math.random()<drawP);
   S.baselineToday+=rate*.1/BW_UPLIFT;
-  // rezerwacje
-  const lam=rate*.1/SEARCH_PER_BOOKING*S.bookSpeed;
-  if(Math.random()<lam) ingestBooking(mockBooking(now),true);
+  SP=2.5/rate;
   const sec=Math.floor(now/1000);
   if(sec!==lastSec){
     const v=S.secCount/(sec-lastSec); if(warm){warm=false;S.secCount=0;lastSec=sec;return} S.perSec.push(v); while(S.perSec.length>60)S.perSec.shift();
@@ -394,16 +366,12 @@ const P=(x,y)=>[(T.ox+x*T.s)*T.dpr,(T.oy+y*T.s)*T.dpr];
 const destBy={}; MAP.dest.forEach(d=>destBy[d.city]=d);
 const aptBy={}; MAP.airports.forEach(a=>aptBy[a.code]=a);
 const FX={
-  pings:[], arcs:[], books:[],
+  pings:[], arcs:[],
   search(e){
     if(this.pings.length>220) return;
     const d=e.destCity&&destBy[e.destCity]; if(!d) return;
     this.pings.push({x:d.x,y:d.y,t:performance.now()});
     if(e.airport && Math.random()<.35){const a=aptBy[e.airport]; this.arcs.push({a,d,t:performance.now()})}
-  },
-  booking(e){
-    const d=destBy[e.destCity], a=aptBy[e.airport]; if(!d||!a) return;
-    this.books.push({a,d,t:performance.now(),label:e.destCity+' · '+zl(e.price)});
   }
 };
 function ctrl(a,d){const mx=(a.x+d.x)/2,my=(a.y+d.y)/2,dx=d.x-a.x,dy=d.y-a.y,len=Math.hypot(dx,dy);const k=.22;return [mx+dy/len*len*k*(dx>0?-1:1)*.3, my-len*k]}
@@ -416,11 +384,11 @@ function drawArc(a,d,t0,t1,style,w){
 function render(now){
   ctx.clearRect(0,0,cvs.width,cvs.height);
   const s=T.s*T.dpr;
-  // kierunki: stałe kropki + rezerwacje dziś
+  // kierunki: stałe kropki + top 3 kraje
   for(const d of MAP.dest){
-    const [x,y]=P(d.x,d.y); const nb=S.bookByDest[d.city]||0;
+    const [x,y]=P(d.x,d.y); const top=S.top3.has(d.country);
     ctx.beginPath(); ctx.arc(x,y,(1.6+d.w*.12)*s,0,7); ctx.fillStyle='rgba(167,169,172,.55)'; ctx.fill();
-    if(nb){ctx.beginPath(); ctx.arc(x,y,(2+Math.sqrt(nb)*1.3)*s,0,7); ctx.strokeStyle='rgba(243,28,42,.65)'; ctx.lineWidth=1.2*T.dpr; ctx.stroke()}
+    if(top){ctx.beginPath(); ctx.arc(x,y,(3+d.w*.5)*s,0,7); ctx.strokeStyle='rgba(243,28,42,.65)'; ctx.lineWidth=1.2*T.dpr; ctx.stroke()}
     if(d.edge){ctx.font=`${10*T.dpr}px Poppins, Arial`;ctx.fillStyle='rgba(167,169,172,.8)';ctx.textAlign=d.edge==='W'?'left':'right';ctx.textBaseline='middle';ctx.fillText((d.edge==='W'?'← ':'')+d.city+(d.edge==='E'?' →':''), x+(d.edge==='W'?8:-8)*T.dpr, y)}
   }
   // lotniska
@@ -431,36 +399,20 @@ function render(now){
   // pingi
   FX.pings=FX.pings.filter(o=>now-o.t<1000);
   for(const o of FX.pings){const p=(now-o.t)/1000;const [x,y]=P(o.x,o.y);ctx.beginPath();ctx.arc(x,y,(2.5+p*12)*s,0,7);ctx.strokeStyle=`rgba(255,255,255,${.9*(1-p)})`;ctx.lineWidth=1.3*T.dpr;ctx.stroke()}
-  // rezerwacje
-  FX.books=FX.books.filter(o=>now-o.t<9000);
-  for(const o of FX.books){
-    const age=(now-o.t)/1000, prog=Math.min(1,age/1.8);
-    const fade=age>6?1-(age-6)/3:1;
-    drawArc(o.a,o.d,0,prog,`rgba(243,28,42,${.9*fade})`,2);
-    if(prog<1){const [hx,hy]=qpt(o.a,ctrl(o.a,o.d),o.d,prog);const [x,y]=P(hx,hy);ctx.beginPath();ctx.arc(x,y,3.5*s,0,7);ctx.fillStyle='#F31C2A';ctx.fill()}
-    else{
-      const [x,y]=P(o.d.x,o.d.y);
-      for(let k=0;k<3;k++){const q=((age-1.8)*.7+k/3)%1;ctx.beginPath();ctx.arc(x,y,(4+q*26)*s,0,7);ctx.strokeStyle=`rgba(243,28,42,${(1-q)*.8*fade})`;ctx.lineWidth=1.5*T.dpr;ctx.stroke()}
-      ctx.beginPath();ctx.arc(x,y,4.5*s,0,7);ctx.fillStyle=`rgba(243,28,42,${fade})`;ctx.fill();
-      ctx.font=`600 ${13*T.dpr}px Poppins, Arial`;ctx.textBaseline='middle';
-      const tx=o.d.edge==='E'?x-14*T.dpr:x+14*T.dpr; ctx.textAlign=o.d.edge==='E'?'right':'left';
-      const w=ctx.measureText(o.label).width;
-      ctx.fillStyle=`rgba(35,31,32,${.85*fade})`;ctx.fillRect(o.d.edge==='E'?tx-w-8*T.dpr:tx-6*T.dpr,y-12*T.dpr,w+14*T.dpr,24*T.dpr);
-      ctx.fillStyle=`rgba(255,255,255,${fade})`;ctx.fillText(o.label,tx,y);
-    }
-  }
+
 }
 
 const $=id=>document.getElementById(id);
-const shown={search:0,gmv:0};
+const shown={search:0};
 function lerpTo(k,target,el,f){shown[k]+= (target-shown[k])*.12; if(Math.abs(target-shown[k])<1)shown[k]=target; el.textContent=f(shown[k])}
-function addFeed(e,isNew){
-  const li=document.createElement('li'); if(isNew) li.className='new';
-  const d=new Date(e.ts);
-  li.innerHTML=`<div class="top"><div class="dst">${e.destCity} <span>${e.destCountry}</span></div><div class="pr">${zl(e.price)}</div></div>
-  <div class="meta"><span>${hm(d)}</span><span>${e.adults}+${e.children}</span><span>${e.nights} nocy</span><span>${e.stars}* ${e.board==='All inclusive'?'AI':e.board==='Ultra all inclusive'?'UAI':e.board}</span><span>wylot ${e.airport}</span>${e.discountPct?`<span class="disc">-${e.discountPct}%</span>`:''}</div>`;
-  const f=$('feed'); f.prepend(li); while(f.children.length>9) f.lastChild.remove();
-  if(isNew) setTimeout(()=>li.classList.remove('new'),8000);
+function addStream(e){
+  const li=document.createElement('li'), d=new Date(e.ts);
+  if(e.filters.includes('Promocja Black Week')) li.className='promo';
+  const mon=(MONTHS.find(m=>m[0]===e.month)||['',''])[1];
+  const where=e.destCity?`${e.destCity} <span>${e.destCountry}</span>`:'Dowolny kierunek';
+  const f=e.filters.slice(0,2).join(', ');
+  li.innerHTML=`<span class="tm">${hm(d)}:${pad(d.getSeconds())}</span><span class="d">${where}</span><span class="m">${e.adults}+${e.children} · ${mon} ${e.month.slice(0,4)}${e.airport?' · z '+e.airport:''}${f?' · '+f:''}</span>`;
+  const s=$('stream'); s.prepend(li); while(s.children.length>16) s.lastChild.remove();
 }
 function agg(key,from=0){const o={};let tot=0;for(const b of S.buckets.slice(from)){tot+=b.total;for(const k in b[key])o[k]=(o[k]||0)+b[key][k]}return {o,tot}}
 function bars(el,rows,opts={}){
@@ -488,7 +440,7 @@ function hourlyChart(){
   }
   const bl=S.hourlyBase.map((v,i)=>(i?'L':'M')+(i*bw+bw/2).toFixed(1)+','+(bh-v/mx*bh).toFixed(1)).join('');
   s+=`<path d="${bl}" fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray="3 3" opacity=".7"/>`;
-  s+=`<text x="${w-2}" y="10" fill="#A7A9AC" font-size="9" text-anchor="end">- - zwykły poniedziałek</text>`;
+  s+=`<text x="${w-2}" y="10" fill="#A7A9AC" font-size="9" text-anchor="end">- - ${normDay()}</text>`;
   el.innerHTML=s;
 }
 function seasonChart(){
@@ -512,7 +464,7 @@ function panels(){
   S.buckets.slice(0,-5).forEach(b=>{O.tot+=b.total;for(const k in b.country)O.o[k]=(O.o[k]||0)+b.country[k]});
   const rows=Object.entries(A.o).map(([k,v])=>{const sN=(N.o[k]||0)/N.tot, sO=(O.o[k]||0)/O.tot;const d=sO?(sN/sO-1):0;
     return {k,v:v/A.tot*100,tr:Math.abs(d)>.04?`<span class="${d>0?'tr-up':'tr-dn'}"> ${d>0?'▲':'▼'}</span>`:''}}).sort((a,b)=>b.v-a.v).slice(0,7);
-  bars($('bDest'),rows);
+  bars($('bDest'),rows); S.top3=new Set(rows.slice(0,3).map(r=>r.k));
   const C=agg('cfg'); bars($('bCfg'),Object.entries(C.o).map(([k,v])=>({k,v:v/C.tot*100})).sort((a,b)=>b.v-a.v).slice(0,7));
   const F=agg('flt'); bars($('bFlt'),Object.entries(F.o).map(([k,v])=>({k,v:v/F.tot*100,hl:k==='Promocja Black Week'})).sort((a,b)=>b.v-a.v).slice(0,7));
   const Ap=agg('apt'); const at=Object.values(Ap.o).reduce((a,x)=>a+x,0);
@@ -522,18 +474,12 @@ function panels(){
   seasonChart();
 }
 function kpis(){
-  const nb=S.bookings.length;
-  $('kBook').textContent=fmt(nb);
-  $('kPax').textContent=fmt(S.pax);
-  $('kAvg').textContent=nb?zl(S.gmv/nb):'-';
-  $('kRatio').textContent=nb?fmt(S.searchesToday/nb):'-';
-  const last=S.bookings[S.bookings.length-1]; $('kLast').textContent=last?hm(new Date(last.ts)):'-';
   const up=S.searchesToday/S.baselineToday-1; $('kUplift').textContent=(up>=0?'+':'')+Math.round(up*100)+'%';
-  $('kPeak').textContent=fmt(S.peak.v)+'/s'+(S.peak.t?' o '+hm(S.peak.t):'');
-  const rate=S.perSec.slice(-5).reduce((a,x)=>a+x,0)/5;
-  const every=SEARCH_PER_BOOKING/(rate*S.bookSpeed);
-  $('kEvery').textContent=every<60?Math.round(every)+' s':Math.round(every/60)+' min';
-  $('hHead').innerHTML=`Dziś <em>${(up>=0?'+':'')+Math.round(up*100)}%</em> wyszukiwań vs zwykły poniedziałek`;
+  $('kPeakV').textContent=fmt(S.peak.v)+'/s'; $('kPeakT').textContent=S.peak.t?hm(S.peak.t):'-';
+  $('kMin').textContent=fmt(S.perSec.reduce((a,x)=>a+x,0));
+  const C=agg('cfg'); let k=0; for(const c in C.o) if(!c.endsWith('+0')) k+=C.o[c]; $('kKids').textContent=Math.round(k/C.tot*100)+'%';
+  $('kSample').textContent=fmt(S.perSec[S.perSec.length-1]/2.5);
+  $('hHead').innerHTML=`Dziś <em>${(up>=0?'+':'')+Math.round(up*100)}%</em> wyszukiwań vs ${normDay()}`; $('kNorm').textContent=normDay();
 }
 function header(){
   const d=new Date(); $('clock').textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
@@ -541,19 +487,16 @@ function header(){
   const dd=Math.min(8,Math.max(1,day)); $('bwday').textContent=`Dzień ${dd} z 8`;
   $('daybar').innerHTML=Array.from({length:8},(_,i)=>`<span class="${i+1<dd?'done':i+1===dd?'on':''}"></span>`).join('');
 }
-['spd1','spd8'].forEach(id=>$(id).onclick=()=>{S.bookSpeed=id==='spd8'?8:1;$('spd1').classList.toggle('on',S.bookSpeed===1);$('spd8').classList.toggle('on',S.bookSpeed===8)});
 
-seedHistory(); resize(); header(); kpis(); panels(); sparkline(); hourlyChart();
+seedHistory(); for(let i=12;i>0;i--) addStream(mockSearch(Date.now()-i*400)); resize(); header(); kpis(); panels(); sparkline(); hourlyChart();
 setInterval(mockTick,100);
 setInterval(()=>{header();kpis();sparkline()},1000);
 setInterval(()=>{panels();hourlyChart()},3000);
 (function frame(now){
   lerpTo('search',S.searchesToday,$('kSearch'),fmt);
-  lerpTo('gmv',S.gmv,$('kGmv'),zl);
   const rate=S.perSec.length?S.perSec[S.perSec.length-1]:0; $('kRate').textContent=fmt(rate);
   render(now); requestAnimationFrame(frame);
 })(performance.now());
-setTimeout(()=>{if(!S.bookings.length||Date.now()-S.bookings[S.bookings.length-1].ts>90000)ingestBooking(mockBooking(Date.now()),true)},4000);
 </script>
 <script>
 (async()=>{try{
