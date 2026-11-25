@@ -77,11 +77,11 @@ h1 span{color:var(--red);display:block}
 .tag i{width:6px;height:6px;border-radius:50%;background:#fff;animation:blink 1.4s infinite}
 @keyframes blink{50%{opacity:.25}}
 .top{list-style:none;display:flex;flex-direction:column;gap:7px}
-.top li{display:grid;grid-template-columns:22px minmax(0,1fr) 46px;align-items:center;gap:10px;font-size:14px}
+.top li{display:grid;grid-template-columns:22px minmax(0,1fr);align-items:center;gap:10px;font-size:14px}
 .top .n{color:var(--g2);font-variant-numeric:tabular-nums;font-size:12px}
 .top .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
 .top .nm span{font-weight:300;color:var(--g2)}
-.top .bar{grid-column:2/4;height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:-4px}
+.top .bar{grid-column:2/3;height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:-4px}
 .top .bar i{display:block;height:100%;background:#fff;border-radius:2px;transition:width .8s}
 .top li:first-child .bar i{background:var(--red)}
 .top .p{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
@@ -174,7 +174,6 @@ dialog .acts .btn{flex:1 1 200px}
     <h2>Tablica wyszukiwań <span class="tag"><i></i>na żywo</span></h2>
     <div class="bh" aria-hidden="true"><span>Godz.</span><span>Wylot</span><span>Kierunek</span><span>Termin</span></div>
     <ol id="board" aria-label="Najnowsze wyszukiwania"></ol>
-    <div class="bf"><span>Nowe zapytanie co <b id="kEvery">-</b></span></div>
   </div>
   <div class="card">
     <h2>Najpopularniejsze kierunki <span class="tag"><i></i>na żywo</span></h2>
@@ -290,7 +289,7 @@ function agg(key){const o={};let tot=0;for(const b of S.buckets){tot+=b.total;fo
 function panels(){
   const C=agg('city'),rows=Object.entries(C.o).sort((a,b)=>b[1]-a[1]).slice(0,20),mx=rows[0][1];
   S.top=new Set(rows.slice(0,3).map(r=>r[0]));S.rows=rows.map(([c,v])=>({c,country:destBy[c].country,p:v/C.tot*100}));
-  $('top').innerHTML=S.rows.map((r,i)=>`<li${i>=5?' class="more-row"':''}><span class="n">${pad(i+1)}</span><span class="nm">${r.c} <span>${r.country}</span></span><span class="p">${r.p.toFixed(1)}%</span><span class="bar"><i style="width:${r.p/(mx/C.tot*100)*100}%"></i></span></li>`).join('');
+  $('top').innerHTML=S.rows.map((r,i)=>`<li${i>=5?' class="more-row"':''}><span class="n">${pad(i+1)}</span><span class="nm">${r.c} <span>${r.country}</span></span><span class="bar"><i style="width:${r.p/(mx/C.tot*100)*100}%"></i></span></li>`).join('');
   const F=agg('flt');S.flt=Object.entries(F.o).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([f,v])=>({f,p:Math.round(v/F.tot*100)}));
   $('chips').innerHTML=S.flt.map(x=>`<span class="chip${x.f==='Promocja Black Week'?' hot':''}">${x.f} <b>${x.p}%</b></span>`).join('');
 }
@@ -377,7 +376,7 @@ $('liBtn').addEventListener('click',()=>{
   $('toast').textContent='Grafika została pobrana. W LinkedIn kliknij ikonę zdjęcia i dodaj ją do posta.';
 });
 
-resize();panels();setInterval(tick,100);setInterval(panels,3000);setInterval(boardStats,200);
+resize();panels();setInterval(tick,100);setInterval(panels,3000);
 from=target=shown=S.today;
 (function frame(now){if(now-t0>2000){from=shown;target=S.today;t0=now}const p=Math.min(1,(now-t0)/1500);shown=from+(target-from)*(1-Math.pow(1-p,3));
   if(now-lastTxt>120){lastTxt=now;$('kSearch').textContent=fmt(shown)}boardStep(now);render(now);requestAnimationFrame(frame)})(performance.now());
