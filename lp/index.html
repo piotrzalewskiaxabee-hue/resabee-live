@@ -52,7 +52,7 @@ header img{height:32px;width:auto;display:block}
 h1{font-size:34px;line-height:1.06;font-weight:700;letter-spacing:-.02em}
 h1 span{color:var(--red);display:block}
 .lead{font-size:15px;line-height:1.5;color:var(--g3);font-weight:300}
-.lead b{color:#fff;font-weight:600}
+.lead b{color:#fff;font-weight:600;white-space:nowrap}
 .count .l{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--g2);font-weight:500}
 .count .v{font-size:40px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap}
 .count-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px}
@@ -169,10 +169,9 @@ dialog .acts .btn{flex:1 1 200px}
   <h2 id="shareTitle">Udostępnij dane</h2>
   <img id="shareImg" alt="Grafika z aktualną liczbą wyszukiwań, top kierunkami i filtrami">
   <div class="acts">
-    <a class="btn btn-red" id="dlBtn" href="#" download>Pobierz grafikę</a>
+    <button class="btn btn-red" id="liBtn" type="button">Opublikuj na LinkedIn</button>
     <button class="btn btn-line" id="nativeBtn" type="button" hidden>Udostępnij</button>
-    <button class="btn btn-line" id="liBtn" type="button">Opublikuj na LinkedIn</button>
-    <button class="btn btn-line" id="copyBtn" type="button">Kopiuj link</button>
+    <a id="dlBtn" href="#" download hidden></a>
   </div>
   <p id="toast" role="status"></p>
 </dialog>
@@ -312,11 +311,10 @@ async function openShare(){
 $('shareBtn').addEventListener('click',openShare);
 $('shareClose').addEventListener('click',()=>$('shareDlg').close());
 $('shareDlg').addEventListener('click',e=>{if(e.target===$('shareDlg'))$('shareDlg').close()});
-$('nativeBtn').addEventListener('click',async()=>{try{await navigator.share({files:[cardFile],title:'Mapa wyszukiwań Black Week',text:'Black Week w turystyce na żywo: '+PAGE_URL})}catch(e){}});
-$('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(PAGE_URL);$('toast').textContent='Link skopiowany.'}catch(e){$('toast').textContent=PAGE_URL}});
+$('nativeBtn').addEventListener('click',async()=>{try{await navigator.share({files:[cardFile],title:'Mapa wyszukiwań Black Week',text:postText()})}catch(e){}});
 function postText(){const t=S.rows[0];return `Black Week w turystyce na żywo: ${fmt(S.today)} wyszukiwań ofert dziś. Najczęściej szukany kierunek: ${t?t.c:''}. Zobacz mapę: ${PAGE_URL} #BlackWeek #turystyka #Resabee`}
-$('liBtn').addEventListener('click',async()=>{
-  if(cardFile&&navigator.canShare&&navigator.canShare({files:[cardFile]})){try{await navigator.share({files:[cardFile],text:postText()});return}catch(e){if(e.name==='AbortError')return}}
+$('liBtn').addEventListener('click',()=>{
+  if(!cardUrl)return;
   $('dlBtn').click();
   window.open('https://www.linkedin.com/feed/?shareActive=true&text='+encodeURIComponent(postText()),'_blank','noopener');
   $('toast').textContent='Grafika została pobrana. W LinkedIn kliknij ikonę zdjęcia i dodaj ją do posta.';
