@@ -104,9 +104,12 @@ h1 span{color:var(--red);display:block}
 @keyframes rowin{from{opacity:0;transform:translateY(-10px)}}
 .board .bf{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin-top:10px;font-size:12px;color:var(--g2)}
 .board .bf b{color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
-.pulse{display:flex;align-items:flex-end;gap:2px;height:22px;flex:none}
-.pulse i{width:3px;background:var(--g1);border-radius:1px;transition:height .1s}
-.pulse i:last-child{background:var(--red)}
+.more{margin-top:12px;width:100%;min-height:40px;border-radius:99px;border:1px solid var(--line);background:transparent;color:#fff;font:500 13px/1 Poppins,Arial,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.more:hover{border-color:#fff}
+.more svg{width:14px;height:14px;transition:transform .2s}
+.more[aria-expanded="true"] svg{transform:rotate(180deg)}
+.top li.more-row{display:none}
+.top.open li.more-row{display:grid}
 
 footer{padding:0 18px 24px;display:flex;justify-content:flex-end;font-size:11.5px;color:var(--g2)}
 footer a{display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap}
@@ -123,21 +126,20 @@ dialog .acts .btn{flex:1 1 200px}
 #toast{font-size:12px;color:var(--g2);margin-top:10px;min-height:16px}
 
 @media (min-width:1000px){
-  html,body{height:100%;overflow:hidden}
-  body{display:grid;gap:0;grid-template-columns:minmax(380px,34vw) 1fr;grid-template-rows:auto auto 1fr;grid-template-areas:"header map" "intro map" "cards map";height:100vh}
+  body{display:grid;gap:0;grid-template-columns:minmax(380px,34vw) 1fr;grid-template-rows:auto auto 1fr;grid-template-areas:"header map" "intro map" "cards map";min-height:100vh}
   header{grid-area:header;padding:22px 40px 0;position:relative;z-index:3}
   header img{height:42px}
   #intro{grid-area:intro;padding:74px 0 0 40px;gap:18px;position:relative;z-index:2}
   h1{font-size:clamp(38px,3vw,52px)}
   .lead{font-size:16px;max-width:440px}
   .count .v{font-size:clamp(38px,3vw,50px)}
-  #cards{grid-area:cards;padding:20px 0 16px 40px;min-height:0;overflow:auto;position:relative;z-index:2}
-  #mapwrap{grid-area:map;aspect-ratio:auto;margin:0;min-height:0}
+  #cards{grid-area:cards;padding:20px 0 40px 40px;position:relative;z-index:2}
+  #mapwrap{grid-area:map;aspect-ratio:auto;margin:0;position:sticky;top:0;height:100vh;align-self:start}
   #mapwrap:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--black) 0,rgba(35,31,32,0) 10%);z-index:1;pointer-events:none}
   .legend{right:40px;bottom:52px;font-size:12px;gap:16px}
-  #pitch{grid-area:map;align-self:start;justify-self:end;z-index:4;margin:22px 40px 0 0;max-width:420px;padding:20px 22px;backdrop-filter:blur(4px)}
+  #pitch{grid-area:map;align-self:start;justify-self:end;z-index:4;margin:22px 40px 0 0;position:sticky;top:22px;max-width:420px;padding:20px 22px;backdrop-filter:blur(4px)}
   #pitch p{font-size:15px}
-  footer{grid-area:map;align-self:end;justify-self:end;z-index:3;padding:0 40px 16px}
+  footer{grid-area:map;align-self:end;justify-self:end;z-index:3;padding:0 40px 16px;position:sticky;bottom:0}
 }
 @media (max-width:420px){.board .bh,.board li{grid-template-columns:70px 44px minmax(0,1fr) 70px;gap:6px}.board li{font-size:11px}.board li .sub{display:none}}
 @media (prefers-reduced-motion:reduce){.tag i{animation:none}.btn{transition:none}.board .f.ok,.board li.new{animation:none}}
@@ -173,11 +175,12 @@ dialog .acts .btn{flex:1 1 200px}
     <h2>Tablica wyszukiwań <span class="tag"><i></i>na żywo</span></h2>
     <div class="bh" aria-hidden="true"><span>Godz.</span><span>Wylot</span><span>Kierunek</span><span>Termin</span></div>
     <ol id="board" aria-label="Najnowsze wyszukiwania"></ol>
-    <div class="bf"><span>Nowe zapytanie co <b id="kEvery">-</b> · <b id="kRate">-</b>/s</span><span class="pulse" id="pulse" aria-hidden="true"></span></div>
+    <div class="bf"><span>Nowe zapytanie co <b id="kEvery">-</b></span></div>
   </div>
   <div class="card">
     <h2>Najpopularniejsze kierunki <span class="tag"><i></i>na żywo</span></h2>
     <ol class="top" id="top"></ol>
+    <button class="more" id="moreBtn" type="button" aria-expanded="false" aria-controls="top"><span>Pokaż więcej</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   </div>
   <div class="card">
     <h2>Najczęściej wybierane filtry</h2>
@@ -214,7 +217,7 @@ const FILTERS={'All inclusive':.46,'Hotel 4* i więcej':.31,'Promocja Black Week
 function profileAt(d){const h=d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;const i=Math.floor(h)%24,j=(i+1)%24,f=h-Math.floor(h),s=f*f*(3-2*f);return PROFILE[i]*(1-s)+PROFILE[j]*s}
 function rateAt(d){const t=d.getTime()/1000;return PEAK*profileAt(d)*(1+.05*Math.sin(t/7.3)+.04*Math.sin(t/2.1)+.03*Math.sin(t/31))}
 
-const S={today:0,buckets:[],top:new Set(),rows:[],flt:[],rate:0,pulse:[]};
+const S={today:0,buckets:[],top:new Set(),rows:[],flt:[],rate:0};
 const nb=m=>({min:m,total:0,city:{},flt:{}});
 function bucket(ts){const m=Math.floor(ts/60000);let b=S.buckets[S.buckets.length-1];if(!b||b.min!==m){b=nb(m);S.buckets.push(b);while(S.buckets.length>15)S.buckets.shift()}return b}
 const TRIP_M=[[2026,11,13],[2027,0,11],[2027,1,10],[2027,2,6],[2027,3,7],[2027,4,7],[2027,5,10],[2027,6,15],[2027,7,13],[2027,8,5]];
@@ -241,7 +244,7 @@ window.ResabeeLive={ingestSearch:e=>ingestSearch(e,true),state:S};
 
 let carry=0;
 function tick(){
-  const now=Date.now(),rate=rateAt(new Date(now));carry+=rate*.1*(.75+Math.random()*.5);const n=Math.floor(carry);carry-=n;S.rate=rate;S.pulse.push(n);if(S.pulse.length>28)S.pulse.shift();
+  const now=Date.now(),rate=rateAt(new Date(now));carry+=rate*.1*(.75+Math.random()*.5);const n=Math.floor(carry);carry-=n;S.rate=rate;
   const p=Math.min(1,30/rate);for(let i=0;i<n;i++)ingestSearch(mockSearch(now-Math.random()*100),Math.random()<p);
 }
 
@@ -286,9 +289,9 @@ function render(now){
 const $=id=>document.getElementById(id);let shown=0,from=0,target=0,t0=0,lastTxt=0;
 function agg(key){const o={};let tot=0;for(const b of S.buckets){tot+=b.total;for(const k in b[key])o[k]=(o[k]||0)+b[key][k]}return{o,tot}}
 function panels(){
-  const C=agg('city'),rows=Object.entries(C.o).sort((a,b)=>b[1]-a[1]).slice(0,5),mx=rows[0][1];
+  const C=agg('city'),rows=Object.entries(C.o).sort((a,b)=>b[1]-a[1]).slice(0,20),mx=rows[0][1];
   S.top=new Set(rows.slice(0,3).map(r=>r[0]));S.rows=rows.map(([c,v])=>({c,country:destBy[c].country,p:v/C.tot*100}));
-  $('top').innerHTML=S.rows.map((r,i)=>`<li><span class="n">${pad(i+1)}</span><span class="nm">${r.c} <span>${r.country}</span></span><span class="p">${r.p.toFixed(1)}%</span><span class="bar"><i style="width:${r.p/(mx/C.tot*100)*100}%"></i></span></li>`).join('');
+  $('top').innerHTML=S.rows.map((r,i)=>`<li${i>=5?' class="more-row"':''}><span class="n">${pad(i+1)}</span><span class="nm">${r.c} <span>${r.country}</span></span><span class="p">${r.p.toFixed(1)}%</span><span class="bar"><i style="width:${r.p/(mx/C.tot*100)*100}%"></i></span></li>`).join('');
   const F=agg('flt');S.flt=Object.entries(F.o).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([f,v])=>({f,p:Math.round(v/F.tot*100)}));
   $('chips').innerHTML=S.flt.map(x=>`<span class="chip${x.f==='Promocja Black Week'?' hot':''}">${x.f} <b>${x.p}%</b></span>`).join('');
 }
@@ -314,10 +317,10 @@ function boardStep(now){
   const a=aptBy[e.airport],d=destBy[e.destCity];FX.hi.push({a,d,t:now});FX.labels.push({d,t:now,txt:e.airport+' → '+e.destCity});
 }
 function boardStats(){
-  if(!S.rate)return;const ms=1000/S.rate;$('kEvery').textContent=(ms<10?ms.toFixed(1).replace('.',','):Math.round(ms))+' ms';$('kRate').textContent=fmt(S.rate);
-  const mx=Math.max(...S.pulse,1),pl=$('pulse');if(pl.children.length!==S.pulse.length)pl.innerHTML=S.pulse.map(()=>'<i></i>').join('');
-  S.pulse.forEach((v,i)=>{pl.children[i].style.height=Math.max(2,Math.round(v/mx*22))+'px'});
+  if(!S.rate)return;const ms=1000/S.rate;$('kEvery').textContent=(ms<10?ms.toFixed(1).replace('.',','):Math.round(ms))+' ms';
 }
+$('moreBtn').addEventListener('click',()=>{const b=$('moreBtn'),open=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',String(open));$('top').classList.toggle('open',open);b.firstElementChild.textContent=open?'Pokaż mniej':'Pokaż więcej (top 20)'});
+$('moreBtn').firstElementChild.textContent='Pokaż więcej (top 20)';
 const d0=new Date();$('today').textContent=d0.getDate()+' '+MGEN[d0.getMonth()];
 
 // Udostępnij dane: grafika 1200x1200
