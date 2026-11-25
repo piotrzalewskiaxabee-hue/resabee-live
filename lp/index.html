@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Mapa wyszukiwań Black Week na żywo | Resabee Travel Tech</title>
+<meta name="description" content="Zobacz na żywo, czego szukają klienci biur podróży w Black Week. Kierunki, filtry i tempo wyszukiwań w technologii Resabee Travel Tech.">
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-geo@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--black:#231F20;--red:#F31C2A;--g1:#58595B;--g2:#A7A9AC;--g3:#DCDDDE;--card:#2B2728;--line:#3A3536}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--black);color:#fff;font-family:Poppins,Arial,sans-serif}
+body{display:grid;grid-template-columns:minmax(380px,34vw) 1fr;grid-template-rows:auto 1fr auto;height:100vh;overflow:hidden}
+a{color:inherit}
+header{grid-column:1/-1;grid-row:1;display:flex;justify-content:space-between;align-items:center;padding:22px 40px 0;position:relative;z-index:3}
+header img{height:42px;width:auto;display:block}
+.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:600;font-size:14px;border-radius:99px;padding:11px 22px;white-space:nowrap;transition:background .2s,border-color .2s,transform .2s}
+.btn-ghost{border:1px solid #fff;color:#fff}
+.btn-ghost:hover{background:#fff;color:var(--black)}
+.btn-red{background:var(--red);color:#fff;font-size:15px;padding:14px 26px}
+.btn-red:hover{background:#d9121f;transform:translateY(-1px)}
+.btn svg{width:16px;height:16px}
+
+#left{grid-column:1;grid-row:2;padding:24px 0 12px 40px;display:flex;flex-direction:column;gap:20px;min-height:0;overflow:auto;position:relative;z-index:2}
+h1{font-size:clamp(34px,3vw,52px);line-height:1.06;font-weight:700;letter-spacing:-.02em}
+h1 span{color:var(--red);display:block}
+.lead{font-size:16px;line-height:1.5;color:var(--g3);font-weight:300;max-width:440px}
+.lead b{color:#fff;font-weight:600}
+.counters{display:flex;gap:0;align-items:stretch}
+.counter{padding-right:28px}
+.counter+.counter{border-left:1px solid var(--line);padding:0 0 0 28px}
+.counter .l{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--g2);font-weight:500}
+.counter .v{font-size:clamp(34px,3vw,50px);font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;position:relative}
+.card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--g2);font-weight:500;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.tag{font-size:10px;letter-spacing:.04em;text-transform:none;background:var(--red);color:#fff;border-radius:99px;padding:3px 9px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.tag i{width:6px;height:6px;border-radius:50%;background:#fff;animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.25}}
+.top{list-style:none;display:flex;flex-direction:column;gap:7px}
+.top li{display:grid;grid-template-columns:22px minmax(0,1fr) 46px;align-items:center;gap:10px;font-size:14px}
+.top .n{color:var(--g2);font-variant-numeric:tabular-nums;font-size:12px}
+.top .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.top .nm span{font-weight:300;color:var(--g2)}
+.top .bar{grid-column:2/4;height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:-4px}
+.top .bar i{display:block;height:100%;background:#fff;border-radius:2px;transition:width .8s}
+.top li:first-child .bar i{background:var(--red)}
+.top .p{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:#322D2E;border-radius:99px;padding:6px 12px;font-size:13px;display:inline-flex;gap:8px;align-items:baseline;transition:background .3s}
+.chip b{font-weight:600;font-variant-numeric:tabular-nums}
+.chip.hot{border-color:var(--red)}
+.pitch{grid-column:2;grid-row:2;align-self:end;justify-self:start;z-index:2;margin:0 0 20px 8px;max-width:440px;display:flex;flex-direction:column;gap:14px;background:rgba(35,31,32,.88);border:1px solid var(--line);border-radius:16px;padding:20px 22px;backdrop-filter:blur(4px)}
+.pitch p{font-size:15px;line-height:1.5;color:var(--g3)}
+.pitch p b{color:#fff;font-weight:600}
+
+#mapwrap{grid-column:2;grid-row:1/4;position:relative;min-height:0}
+#mapwrap svg,#mapwrap canvas{position:absolute;inset:0;width:100%;height:100%}
+#map path{fill:#322D2E;stroke:#4A4345;stroke-width:.6}
+#map path.pl{fill:#4A4345;stroke:#A7A9AC}
+#mapwrap:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--black) 0,rgba(35,31,32,0) 10%);z-index:1;pointer-events:none}
+.legend{position:absolute;right:40px;bottom:52px;font-size:12px;color:var(--g2);display:flex;gap:16px;z-index:2}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+footer{grid-column:1/-1;grid-row:3;position:relative;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:20px;padding:10px 40px 16px;font-size:11.5px;color:var(--g2)}
+footer .pw{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+footer .pw svg{height:14px;width:auto}
+
+@media (max-width:1000px){
+  html,body{height:auto;overflow-x:hidden;overflow-y:auto}
+  body{display:flex;flex-direction:column;gap:20px;height:auto}
+  header{padding:16px 18px 0;order:0}
+  header img{height:32px}
+  .btn-ghost{padding:9px 14px;font-size:12px}
+  #left{display:contents}
+  #left>*{margin:0 18px}
+  #left>div:first-child{order:1}
+  .lead{order:2}
+  .counters{order:3}
+  #mapwrap{order:4;aspect-ratio:1000/680;height:auto;margin:0 6px}
+  #left>.card{order:5}
+  .pitch{order:6;margin:0 18px;max-width:none;backdrop-filter:none}
+  #mapwrap:before{display:none}
+  .legend{right:12px;bottom:6px;font-size:10px}
+  footer{order:7;flex-direction:column;align-items:flex-start;padding:0 18px 22px}
+  .counter{padding-right:18px}.counter+.counter{padding-left:18px}
+}
+</style>
+</head>
+<body>
+<header>
+  <a href="https://www.resabee.com/?utm_source=resabee-live&amp;utm_medium=landing&amp;utm_campaign=black-week-2026" aria-label="Resabee Travel Tech - strona główna"><img src="https://cdn.prod.website-files.com/66c6eb8e832658d31d056d07/67505a7277156b478a419355_resabee-travel-tech.webp" alt="Resabee Travel Tech"></a>
+  <a class="btn btn-ghost" href="https://www.resabee.com/?utm_source=resabee-live&amp;utm_medium=landing&amp;utm_campaign=black-week-2026" target="_blank" rel="noopener">Umów demo</a>
+</header>
+
+<section id="left">
+  <div>
+    <h1>Mapa wyszukiwań <span>Black Week</span></h1>
+  </div>
+  <p class="lead">Śledź na żywo, czego szukają klienci biur podróży <b id="today">dziś</b>.</p>
+
+  <div class="counters">
+    <div class="counter"><div class="l">Wyszukiwania dziś</div><div class="v" id="kSearch">0</div></div>
+    <div class="counter"><div class="l">Tempo / sekundę</div><div class="v" id="kRate">0</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Najpopularniejsze kierunki <span class="tag"><i></i>na żywo</span></h2>
+    <ol class="top" id="top"></ol>
+  </div>
+
+  <div class="card">
+    <h2>Najczęściej wybierane filtry</h2>
+    <div class="chips" id="chips"></div>
+  </div>
+
+</section>
+
+<aside class="pitch" id="pitchbox">
+    <p>Za tym ruchem stoi technologia <b>Resabee Travel Tech</b>. Rezerwacje, sprzedaż i back-office biura podróży w jednej platformie, gotowej na szczyt sezonu.</p>
+    <div><a class="btn btn-red" href="https://www.resabee.com/?utm_source=resabee-live&amp;utm_medium=landing&amp;utm_campaign=black-week-2026" target="_blank" rel="noopener">Umów bezpłatne demo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+  </aside>
+
+<section id="mapwrap" aria-label="Mapa wyszukiwań z Polski do kierunków wakacyjnych">
+  <svg id="map" viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div class="legend"><span><i style="background:#fff"></i>wyszukiwanie</span><span><i style="background:var(--red)"></i>najczęściej szukane</span></div>
+</section>
+
+<footer>
+  <span>Wyszukiwania pokazujemy w formie zagregowanej i bez danych osobowych. Resabee Travel Tech jest marką Axabee.</span>
+  <span class="pw">powered by <svg role="img" aria-label="axabee" xmlns="http://www.w3.org/2000/svg" viewBox="151.8 150.9 562.5 98.3"><title>axabee</title><path fill="#F31C2A" d="M269.5,203.3c-1-0.1-2.1-0.2-3.2-0.2c-12.4,0-22.6-10.2-22.6-22.7c0-1.1-0.1-2.1-0.2-3.2 c-1.5-11.2-11.2-19.9-22.9-19.9c-11.7,0-21.4,8.7-22.9,20c-0.1,1-0.2,2-0.2,3.1c0,12.5-10.2,22.7-22.7,22.7c-1.1,0-2.1,0.1-3.2,0.2 c-11.2,1.5-19.8,11.2-19.8,22.8c0,12.7,10.3,23.1,23,23.1c11.7,0,21.4-8.7,22.9-20c0.1-1,0.2-2,0.2-3.1c0-12.4,10.2-22.6,22.7-22.6 c12.5,0,22.7,10.1,22.7,22.6c0,1.1,0.1,2.1,0.2,3.2c1.5,11.2,11.2,19.9,22.8,19.9c12.7,0,23.1-10.4,23.1-23.1 C289.4,214.4,280.8,204.8,269.5,203.3z"/><path fill="#FFFFFF" d="M372.3,174.2l-0.1,58.4H357v-7.9c-4,5.5-10.1,9.1-18.3,9.1c-15.3,0-26.7-12.5-26.7-30.5 c0-18.1,11.6-30.5,26.6-30.5c8.3,0,14.4,3.8,18.5,9.4v-8.2H372.3z M357.1,203.4c0-9.6-6.5-16-15-16s-14.8,6.5-14.8,16 c0,9.7,6.4,16,14.8,16C350.7,219.4,357.1,213.1,357.1,203.4z"/><path fill="#FFFFFF" d="M422.4,232.6l-12-18.4L399,232.6h-18.3l20.6-30.2l-19.5-28.3h18.1l11.1,17.1l10.3-17.1h18.3l-19.5,28.7 l20.5,29.7H422.4z"/><path fill="#FFFFFF" d="M502.9,174.2l-0.1,58.4h-15.2v-7.9c-4,5.5-10.1,9.1-18.3,9.1c-15.3,0-26.7-12.5-26.7-30.5 c0-18.1,11.6-30.5,26.5-30.5c8.3,0,14.4,3.8,18.5,9.4v-8.2H502.9z M487.7,203.4c0-9.6-6.5-16-15-16c-8.5,0-14.8,6.5-14.8,16 c0,9.7,6.4,16,14.8,16C481.2,219.4,487.7,213.1,487.7,203.4z"/><path fill="#FFFFFF" d="M575.3,203.4c0,18-11.5,30.5-26.7,30.5c-8.3,0-14.3-3.6-18.5-9.1v7.9H515v-81.8h15.2v31.5 c4-5.6,10.3-9.4,18.5-9.4C563.6,172.9,575.3,185.3,575.3,203.4z M559.9,203.4c0-9.6-6.3-16-14.8-16c-8.5,0-15,6.5-15,16 c0,9.7,6.5,16,15,16C553.5,219.4,559.9,213.1,559.9,203.4z"/><path fill="#FFFFFF" d="M644.9,207.3H600c1,9.3,7.3,14,15.2,14c5.8,0,10.9-2.7,13-7.3h15.7c-4.4,13.8-16,19.9-28.6,19.9 c-18.3,0-30.8-13-30.8-30.4c0-17.5,12.6-30.6,30.5-30.6C634.4,172.9,646.4,188.1,644.9,207.3z M600.8,196.2h27.9 c-1.7-6.4-6.5-10.7-13.8-10.7C607.5,185.4,602.7,189.9,600.8,196.2z"/><path fill="#FFFFFF" d="M714.1,207.3h-44.8c1,9.3,7.3,14,15.2,14c5.8,0,10.9-2.7,13-7.3h15.7c-4.4,13.8-16,19.9-28.6,19.9 c-18.3,0-30.8-13-30.8-30.4c0-17.5,12.6-30.6,30.5-30.6C703.6,172.9,715.6,188.1,714.1,207.3z M670.1,196.2H698 c-1.7-6.4-6.5-10.7-13.8-10.7C676.7,185.4,672,189.9,670.1,196.2z"/></svg></span>
+</footer>
+
+<script>
+const MAP={"W":1000,"H":680,"dest":[{"city":"Hurghada","country":"Egipt","x":627.2,"y":379.1,"w":15,"edge":null},{"city":"Marsa Alam","country":"Egipt","x":635.9,"y":398.7,"w":7,"edge":null},{"city":"Sharm el-Sheikh","country":"Egipt","x":631.4,"y":373.2,"w":4,"edge":null},{"city":"Antalya","country":"Turcja","x":602.2,"y":287.3,"w":9,"edge":null},{"city":"Alanya","country":"Turcja","x":612.7,"y":291,"w":4,"edge":null},{"city":"Bodrum","country":"Turcja","x":575.9,"y":286,"w":3,"edge":null},{"city":"Teneryfa","country":"Hiszpania","x":221.3,"y":369.7,"w":6,"edge":null},{"city":"Gran Canaria","country":"Hiszpania","x":229.6,"y":373.1,"w":4,"edge":null},{"city":"Fuerteventura","country":"Hiszpania","x":242.1,"y":369.1,"w":3,"edge":null},{"city":"Majorka","country":"Hiszpania","x":376.5,"y":260,"w":3,"edge":null},{"city":"Costa del Sol","country":"Hiszpania","x":315.7,"y":291.4,"w":2,"edge":null},{"city":"Kreta","country":"Grecja","x":554.7,"y":303.9,"w":6,"edge":null},{"city":"Rodos","country":"Grecja","x":582.3,"y":292.1,"w":4,"edge":null},{"city":"Korfu","country":"Grecja","x":515.5,"y":259.5,"w":2,"edge":null},{"city":"Zakynthos","country":"Grecja","x":523.3,"y":278.4,"w":2,"edge":null},{"city":"Djerba","country":"Tunezja","x":442.5,"y":317.9,"w":3,"edge":null},{"city":"Monastir","country":"Tunezja","x":442.3,"y":298.6,"w":2,"edge":null},{"city":"Larnaka","country":"Cypr","x":625.8,"y":307,"w":2,"edge":null},{"city":"Złote Piaski","country":"Bułgaria","x":580.8,"y":220.1,"w":2,"edge":null},{"city":"Durres","country":"Albania","x":511.7,"y":241.5,"w":2,"edge":null},{"city":"Agadir","country":"Maroko","x":277.9,"y":350.1,"w":2,"edge":null},{"city":"Madera","country":"Portugalia","x":219.1,"y":329,"w":2,"edge":null},{"city":"Sal","country":"Wyspy Zielonego Przylądka","x":170.4,"y":470.5,"w":2,"edge":null},{"city":"Dubaj","country":"ZEA","x":799.9,"y":397.6,"w":6,"edge":null},{"city":"Salalah","country":"Oman","x":790.5,"y":468.2,"w":2,"edge":null},{"city":"Zanzibar","country":"Tanzania","x":670.6,"y":656.9,"w":6,"edge":null},{"city":"Punta Cana","country":"Dominikana","x":14,"y":330,"w":5,"edge":"W"},{"city":"Cancun","country":"Meksyk","x":14,"y":365,"w":3,"edge":"W"},{"city":"Varadero","country":"Kuba","x":14,"y":400,"w":2,"edge":"W"},{"city":"Phuket","country":"Tajlandia","x":986,"y":520,"w":3,"edge":"E"},{"city":"Malediwy","country":"Malediwy","x":986,"y":555,"w":2,"edge":"E"},{"city":"Sri Lanka","country":"Sri Lanka","x":986,"y":590,"w":2,"edge":"E"}],"airports":[{"code":"WAW","city":"Warszawa","x":523.9,"y":113.4,"w":22},{"code":"KTW","city":"Katowice","x":508.7,"y":135.3,"w":20},{"code":"KRK","city":"Kraków","x":514.3,"y":140.2,"w":9},{"code":"WRO","city":"Wrocław","x":491.1,"y":127.3,"w":10},{"code":"POZ","city":"Poznań","x":490.6,"y":110.1,"w":9},{"code":"GDN","city":"Gdańsk","x":503.8,"y":83.7,"w":9},{"code":"RZE","city":"Rzeszów","x":532.4,"y":139.8,"w":5},{"code":"LUZ","city":"Lublin","x":537.9,"y":125.5,"w":4},{"code":"SZZ","city":"Szczecin","x":475.1,"y":94.6,"w":3},{"code":"BZG","city":"Bydgoszcz","x":499.8,"y":101.1,"w":3},{"code":"LCJ","city":"Łódź","x":511.3,"y":119.3,"w":3},{"code":"WMI","city":"Modlin","x":521.3,"y":109.7,"w":3}]};
+const NF=new Intl.NumberFormat('pl-PL'), fmt=n=>NF.format(Math.round(n)), pad=n=>String(n).padStart(2,'0');
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function pickW(list,k){const s=list.reduce((a,x)=>a+x[k],0);let v=Math.random()*s;for(const x of list){v-=x[k];if(v<=0)return x}return list[list.length-1]}
+const PEAK=520, ANY_DEST=.12, ANY_APT=.15;
+const PROFILE=[.22,.13,.08,.06,.06,.09,.20,.36,.50,.60,.64,.66,.70,.68,.64,.66,.70,.74,.80,.90,.98,1,.82,.50];
+const FILTERS={'All inclusive':.46,'Hotel 4* i więcej':.31,'Promocja Black Week':.27,'Przy plaży':.22,'First minute':.21,'Dla rodzin z dziećmi':.17,'Ocena 8+':.15,'Last minute':.14,'Aquapark':.12,'Dziecko gratis':.09};
+function profileAt(d){const h=d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;const i=Math.floor(h)%24,j=(i+1)%24,f=h-Math.floor(h),s=f*f*(3-2*f);return PROFILE[i]*(1-s)+PROFILE[j]*s}
+function rateAt(d){const t=d.getTime()/1000;return PEAK*profileAt(d)*(1+.05*Math.sin(t/7.3)+.04*Math.sin(t/2.1)+.03*Math.sin(t/31))}
+
+const S={today:0,perSec:[],sec:0,buckets:[],top:new Set()};
+const nb=m=>({min:m,total:0,city:{},flt:{}});
+function bucket(ts){const m=Math.floor(ts/60000);let b=S.buckets[S.buckets.length-1];if(!b||b.min!==m){b=nb(m);S.buckets.push(b);while(S.buckets.length>15)S.buckets.shift()}return b}
+function mockSearch(ts){
+  const d=Math.random()<ANY_DEST?null:pickW(MAP.dest,'w'), a=Math.random()<ANY_APT?null:pickW(MAP.airports,'w');
+  return {ts,destCity:d&&d.city,destCountry:d&&d.country,airport:a&&a.code,filters:Object.keys(FILTERS).filter(f=>Math.random()<FILTERS[f])};
+}
+function ingestSearch(e,draw){
+  S.today++;S.sec++;const b=bucket(e.ts);b.total++;
+  if(e.destCity)b.city[e.destCity]=(b.city[e.destCity]||0)+1;
+  e.filters.forEach(f=>b.flt[f]=(b.flt[f]||0)+1);
+  if(draw)FX.search(e);
+}
+window.ResabeeLive={ingestSearch:e=>ingestSearch(e,true),state:S};
+
+(function seed(){
+  const now=new Date(),mid=new Date(now);mid.setHours(0,0,0,0);const r=mulberry(mid.getTime()/1000|0);
+  for(let t=mid.getTime();t<now.getTime()-1000;t+=60000)S.today+=rateAt(new Date(t))*Math.min(60000,now.getTime()-t)/1000;
+  const nowMin=Math.floor(now.getTime()/60000), ws=MAP.dest.reduce((a,x)=>a+x.w,0);
+  for(let k=14;k>=1;k--){const n=rateAt(new Date((nowMin-k)*60000))*60,b=nb(nowMin-k),j=()=>1+(r()-.5)*.16;b.total=n;
+    MAP.dest.forEach(d=>b.city[d.city]=n*(1-ANY_DEST)*d.w/ws*j());for(const f in FILTERS)b.flt[f]=n*FILTERS[f]*j();S.buckets.push(b)}
+  for(let i=0;i<10;i++)S.perSec.push(rateAt(now));
+})();
+
+let carry=0,lastSec=Math.floor(Date.now()/1000),warm=true;
+function tick(){
+  const now=Date.now(),rate=rateAt(new Date(now));carry+=rate*.1;const n=Math.floor(carry);carry-=n;
+  const p=Math.min(1,30/rate);for(let i=0;i<n;i++)ingestSearch(mockSearch(now-Math.random()*100),Math.random()<p);
+  const sec=Math.floor(now/1000);if(sec!==lastSec){const v=S.sec/(sec-lastSec);S.sec=0;lastSec=sec;if(warm){warm=false;return}S.perSec.push(v);while(S.perSec.length>10)S.perSec.shift()}
+}
+
+const cvs=document.getElementById('fx'),ctx=cvs.getContext('2d');let T={s:1,ox:0,oy:0,dpr:1};
+const destBy={};MAP.dest.forEach(d=>destBy[d.city]=d);const aptBy={};MAP.airports.forEach(a=>aptBy[a.code]=a);
+function resize(){const r=cvs.parentElement.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);cvs.width=r.width*dpr;cvs.height=r.height*dpr;
+  const s=Math.min(r.width/MAP.W,r.height/MAP.H);T={s,ox:(r.width-MAP.W*s)/2,oy:(r.height-MAP.H*s)/2,dpr};
+  MAP.dest.forEach(d=>{if(d.edge==='W')d.x=-T.ox/s+14;if(d.edge==='E')d.x=(r.width-T.ox)/s-14})}
+window.addEventListener('resize',resize);
+const P=(x,y)=>[(T.ox+x*T.s)*T.dpr,(T.oy+y*T.s)*T.dpr];
+const FX={pings:[],arcs:[],labels:[],
+  search(e){const d=e.destCity&&destBy[e.destCity];if(!d||this.pings.length>240)return;const t=performance.now();this.pings.push({d,t});
+    if(e.airport&&Math.random()<.4)this.arcs.push({a:aptBy[e.airport],d,t})}};
+function ctrl(a,d){const mx=(a.x+d.x)/2,my=(a.y+d.y)/2,len=Math.hypot(d.x-a.x,d.y-a.y);return[mx,my-len*.22]}
+function qpt(a,c,d,t){const u=1-t;return[u*u*a.x+2*u*t*c[0]+t*t*d.x,u*u*a.y+2*u*t*c[1]+t*t*d.y]}
+let lastLabel=0;
+function render(now){
+  ctx.clearRect(0,0,cvs.width,cvs.height);const s=T.s*T.dpr,k=T.dpr;
+  for(const d of MAP.dest){const [x,y]=P(d.x,d.y),hot=S.top.has(d.city);
+    ctx.beginPath();ctx.arc(x,y,(hot?3.2:2)*s,0,7);ctx.fillStyle=hot?'#F31C2A':'rgba(167,169,172,.6)';ctx.fill();
+    if(hot){const q=(now/1600+d.x)%1;ctx.beginPath();ctx.arc(x,y,(4+q*18)*s,0,7);ctx.strokeStyle=`rgba(243,28,42,${.7*(1-q)})`;ctx.lineWidth=1.4*k;ctx.stroke()}
+    if(d.edge){ctx.font=`${11*k}px Poppins, Arial`;ctx.fillStyle='rgba(167,169,172,.85)';ctx.textBaseline='middle';ctx.textAlign=d.edge==='W'?'left':'right';ctx.fillText(d.edge==='W'?'← '+d.city:d.city+' →',x+(d.edge==='W'?9:-9)*k,y)}}
+  for(const a of MAP.airports){const [x,y]=P(a.x,a.y);ctx.beginPath();ctx.arc(x,y,2*s,0,7);ctx.fillStyle='#fff';ctx.fill()}
+  FX.arcs=FX.arcs.filter(o=>now-o.t<1600);
+  for(const o of FX.arcs){const p=(now-o.t)/1600,c=ctrl(o.a,o.d);ctx.beginPath();for(let i=0;i<=20;i++){const t=Math.max(0,p-.4)+(Math.min(1,p)-Math.max(0,p-.4))*i/20;const [x,y]=P(...qpt(o.a,c,o.d,t));i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+    ctx.strokeStyle=`rgba(255,255,255,${.35*(1-p)})`;ctx.lineWidth=1*k;ctx.stroke()}
+  FX.pings=FX.pings.filter(o=>now-o.t<1100);
+  for(const o of FX.pings){const p=(now-o.t)/1100,[x,y]=P(o.d.x,o.d.y);ctx.beginPath();ctx.arc(x,y,(2.5+p*13)*s,0,7);ctx.strokeStyle=`rgba(255,255,255,${.85*(1-p)})`;ctx.lineWidth=1.2*k;ctx.stroke()}
+  if(now-lastLabel>2200&&FX.pings.length){const o=FX.pings[FX.pings.length-1];if(!o.d.edge){lastLabel=now;FX.labels.push({d:o.d,t:now})}}
+  FX.labels=FX.labels.filter(o=>now-o.t<2600);
+  for(const o of FX.labels){const a=Math.min(1,(now-o.t)/250,(2600-(now-o.t))/400),[x,y]=P(o.d.x,o.d.y);
+    ctx.font=`600 ${12*k}px Poppins, Arial`;const w=ctx.measureText(o.d.city).width;ctx.globalAlpha=a;
+    ctx.fillStyle='rgba(35,31,32,.92)';ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1*k;
+    const bx=x+10*k,by=y-26*k,bw=w+18*k,bh=22*k;ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,bw,bh,6*k):ctx.rect(bx,by,bw,bh);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(o.d.city,bx+9*k,by+bh/2);ctx.globalAlpha=1}
+}
+
+const $=id=>document.getElementById(id);let shown=0;
+function agg(key){const o={};let tot=0;for(const b of S.buckets){tot+=b.total;for(const k in b[key])o[k]=(o[k]||0)+b[key][k]}return{o,tot}}
+function panels(){
+  const C=agg('city'),rows=Object.entries(C.o).sort((a,b)=>b[1]-a[1]).slice(0,5),mx=rows[0][1];
+  S.top=new Set(rows.slice(0,3).map(r=>r[0]));
+  $('top').innerHTML=rows.map(([c,v],i)=>`<li><span class="n">${pad(i+1)}</span><span class="nm">${c} <span>${destBy[c].country}</span></span><span class="p">${(v/C.tot*100).toFixed(1)}%</span><span class="bar"><i style="width:${v/mx*100}%"></i></span></li>`).join('');
+  const F=agg('flt');$('chips').innerHTML=Object.entries(F.o).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([f,v])=>`<span class="chip${f==='Promocja Black Week'?' hot':''}">${f} <b>${Math.round(v/F.tot*100)}%</b></span>`).join('');
+}
+const d0=new Date();$('today').textContent=d0.getDate()+' '+['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'][d0.getMonth()];
+resize();panels();setInterval(tick,100);setInterval(panels,3000);
+(function frame(now){shown+=(S.today-shown)*.1;if(Math.abs(S.today-shown)<1)shown=S.today;$('kSearch').textContent=fmt(shown);
+  $('kRate').textContent=fmt(S.perSec.reduce((a,x)=>a+x,0)/S.perSec.length);render(now);requestAnimationFrame(frame)})(performance.now());
+</script>
+<script>
+(async()=>{try{
+const topo=await (await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')).json();
+const proj=d3.geoMercator().scale(461.1146).translate([355.1366,607.2686]);
+const path=d3.geoPath(proj);
+document.getElementById('map').innerHTML=topojson.feature(topo,topo.objects.countries).features.map(f=>{const d=path(f);return d?'<path d="'+d+'"'+(f.properties.name==='Poland'?' class="pl"':'')+'/>':''}).join('');
+}catch(e){console.warn('map',e)}})();
+</script>
+</body>
+</html>
