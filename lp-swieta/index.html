@@ -238,6 +238,7 @@ const THEME={
          'Antalya':3,'Alanya':1,'Bodrum':.5,'Kreta':1,'Rodos':.5,'Korfu':.3,'Zakynthos':.3,'Majorka':1,'Costa del Sol':1,'Złote Piaski':.2,'Durres':.3,'Djerba':1,'Monastir':1,'Larnaka':1},
   trip:['2026-12-18','2027-01-06'],      // zakres dat wyjazdu w mocku (Termin na tablicy)
   post:(n,top,url)=>`🎄 Święta pod palmą czy w domu? Resabee Travel Tech podgląda na żywo, gdzie Polacy szukają wyjazdu na Święta i Sylwestra. Dziś już ${n} wyszukiwań, prowadzi ${top}. Zobacz mapę 👇 ${url} #Święta #Sylwester #Turystyka #Resabee`,
+  sleigh:true,                          // zaprzęg Mikołaja leci po czerwonym łuku (tablica)
   snow:true, lights:['#F31C2A','#F2C66D','#FFFFFF','#2FA36B']
 };
 const MAP={"W":1000,"H":680,"dest":[{"city":"Hurghada","country":"Egipt","x":627.2,"y":379.1,"w":15,"edge":null},{"city":"Marsa Alam","country":"Egipt","x":635.9,"y":398.7,"w":7,"edge":null},{"city":"Sharm el-Sheikh","country":"Egipt","x":631.4,"y":373.2,"w":4,"edge":null},{"city":"Antalya","country":"Turcja","x":602.2,"y":287.3,"w":9,"edge":null},{"city":"Alanya","country":"Turcja","x":612.7,"y":291,"w":4,"edge":null},{"city":"Bodrum","country":"Turcja","x":575.9,"y":286,"w":3,"edge":null},{"city":"Teneryfa","country":"Hiszpania","x":221.3,"y":369.7,"w":6,"edge":null},{"city":"Gran Canaria","country":"Hiszpania","x":229.6,"y":373.1,"w":4,"edge":null},{"city":"Fuerteventura","country":"Hiszpania","x":242.1,"y":369.1,"w":3,"edge":null},{"city":"Majorka","country":"Hiszpania","x":376.5,"y":260,"w":3,"edge":null},{"city":"Costa del Sol","country":"Hiszpania","x":315.7,"y":291.4,"w":2,"edge":null},{"city":"Kreta","country":"Grecja","x":554.7,"y":303.9,"w":6,"edge":null},{"city":"Rodos","country":"Grecja","x":582.3,"y":292.1,"w":4,"edge":null},{"city":"Korfu","country":"Grecja","x":515.5,"y":259.5,"w":2,"edge":null},{"city":"Zakynthos","country":"Grecja","x":523.3,"y":278.4,"w":2,"edge":null},{"city":"Djerba","country":"Tunezja","x":442.5,"y":317.9,"w":3,"edge":null},{"city":"Monastir","country":"Tunezja","x":442.3,"y":298.6,"w":2,"edge":null},{"city":"Larnaka","country":"Cypr","x":625.8,"y":307,"w":2,"edge":null},{"city":"Złote Piaski","country":"Bułgaria","x":580.8,"y":220.1,"w":2,"edge":null},{"city":"Durres","country":"Albania","x":511.7,"y":241.5,"w":2,"edge":null},{"city":"Agadir","country":"Maroko","x":277.9,"y":350.1,"w":2,"edge":null},{"city":"Madera","country":"Portugalia","x":219.1,"y":329,"w":2,"edge":null},{"city":"Sal","country":"Wyspy Zielonego Przylądka","x":170.4,"y":470.5,"w":2,"edge":null},{"city":"Dubaj","country":"ZEA","x":799.9,"y":397.6,"w":6,"edge":null},{"city":"Salalah","country":"Oman","x":790.5,"y":468.2,"w":2,"edge":null},{"city":"Zanzibar","country":"Tanzania","x":670.6,"y":656.9,"w":6,"edge":null},{"city":"Punta Cana","country":"Dominikana","x":14,"y":330,"w":5,"edge":"W"},{"city":"Cancun","country":"Meksyk","x":14,"y":365,"w":3,"edge":"W"},{"city":"Varadero","country":"Kuba","x":14,"y":400,"w":2,"edge":"W"},{"city":"Phuket","country":"Tajlandia","x":986,"y":520,"w":3,"edge":"E"},{"city":"Malediwy","country":"Malediwy","x":986,"y":555,"w":2,"edge":"E"},{"city":"Sri Lanka","country":"Sri Lanka","x":986,"y":590,"w":2,"edge":"E"}],"airports":[{"code":"WAW","city":"Warszawa","x":523.9,"y":113.4,"w":22},{"code":"KTW","city":"Katowice","x":508.7,"y":135.3,"w":20},{"code":"KRK","city":"Kraków","x":514.3,"y":140.2,"w":9},{"code":"WRO","city":"Wrocław","x":491.1,"y":127.3,"w":10},{"code":"POZ","city":"Poznań","x":490.6,"y":110.1,"w":9},{"code":"GDN","city":"Gdańsk","x":503.8,"y":83.7,"w":9},{"code":"RZE","city":"Rzeszów","x":532.4,"y":139.8,"w":5},{"code":"LUZ","city":"Lublin","x":537.9,"y":125.5,"w":4},{"code":"SZZ","city":"Szczecin","x":475.1,"y":94.6,"w":3},{"code":"BZG","city":"Bydgoszcz","x":499.8,"y":101.1,"w":3},{"code":"LCJ","city":"Łódź","x":511.3,"y":119.3,"w":3},{"code":"WMI","city":"Modlin","x":521.3,"y":109.7,"w":3}]};
@@ -297,6 +298,31 @@ const FX={pings:[],arcs:[],labels:[],hi:[],
 function ctrl(a,d){const mx=(a.x+d.x)/2,my=(a.y+d.y)/2,len=Math.hypot(d.x-a.x,d.y-a.y);return[mx,my-len*.22]}
 function qpt(a,c,d,t){const u=1-t;return[u*u*a.x+2*u*t*c[0]+t*t*d.x,u*u*a.y+2*u*t*c[1]+t*t*d.y]}
 function rrect(c,x,y,w,h,r){c.beginPath();if(c.roundRect)c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h)}
+/* ===== THEME FX: zaprzęg Świętego Mikołaja ===== */
+function sleigh(o,c,p,f,now,k){
+  const e=p,[x,y]=P(...qpt(o.a,c,o.d,e)),[x2,y2]=P(...qpt(o.a,c,o.d,Math.min(1,e+.02))),[x0,y0]=P(...qpt(o.a,c,o.d,Math.max(0,e-.02)));
+  let tx=x2-x0,ty=y2-y0;const fl=tx<0;if(fl)tx=-tx;const ang=Math.atan2(ty,tx||1);
+  o.sp=o.sp||[];if(p<1&&now-(o.ls||0)>40){o.ls=now;o.sp.push({x,y,t:now,r:Math.random()})}o.sp=o.sp.filter(q=>now-q.t<700);
+  for(const q of o.sp){const a=1-(now-q.t)/700;ctx.globalAlpha=a*f;ctx.fillStyle=q.r>.5?'#F2C66D':'#fff';ctx.beginPath();ctx.arc(q.x+(q.r-.5)*6*k,q.y+(q.r-.5)*6*k+(now-q.t)*.01*k,(1+q.r*1.4)*k,0,7);ctx.fill()}
+  ctx.globalAlpha=f;ctx.save();ctx.translate(x,y-7*k);if(fl)ctx.scale(-1,1);ctx.rotate(ang*.6);const z=1.25*k;ctx.scale(z,z);
+  const gal=Math.sin(now/70);ctx.lineCap='round';
+  ctx.strokeStyle='#F2C66D';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(-3,-1);ctx.lineTo(23,-2);ctx.stroke();
+  for(const [rx,rd] of [[11,0],[21,1]]){const b=Math.sin(now/70+rd)*1.2;
+    ctx.strokeStyle='#8A5A2E';ctx.lineWidth=1.1;ctx.beginPath();ctx.moveTo(rx-2,1+b);ctx.lineTo(rx-3.5-gal*1.5,5+b);ctx.moveTo(rx+2,1+b);ctx.lineTo(rx+3.5+gal*1.5,5+b);ctx.stroke();
+    ctx.fillStyle='#A8723F';ctx.beginPath();ctx.ellipse(rx,b-.5,4.2,2.1,0,0,7);ctx.fill();
+    ctx.beginPath();ctx.ellipse(rx+4.6,b-3.2,1.9,1.4,-.5,0,7);ctx.fill();
+    ctx.strokeStyle='#E9D8BE';ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(rx+4,b-4.3);ctx.lineTo(rx+3,b-7.5);ctx.moveTo(rx+3.4,b-6);ctx.lineTo(rx+1.8,b-7);ctx.moveTo(rx+4.8,b-4.4);ctx.lineTo(rx+5.6,b-7.3);ctx.stroke();
+    if(rd){ctx.fillStyle='#F31C2A';ctx.shadowColor='#F31C2A';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(rx+6.6,b-2.9,1,0,7);ctx.fill();ctx.shadowBlur=0}}
+  ctx.fillStyle='#7A4A2A';ctx.beginPath();ctx.arc(-14,-5.5,3.3,0,7);ctx.fill();
+  ctx.fillStyle='#F31C2A';ctx.beginPath();ctx.moveTo(-17,-2);ctx.lineTo(-3,-2);ctx.quadraticCurveTo(-1,-2,-1.5,1);ctx.lineTo(-3,5);ctx.lineTo(-15,5);ctx.quadraticCurveTo(-18,5,-17,-2);ctx.fill();
+  ctx.strokeStyle='#F2C66D';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-19,8);ctx.lineTo(-2,8);ctx.quadraticCurveTo(2,8,1,4.5);ctx.moveTo(-14,5);ctx.lineTo(-14,8);ctx.moveTo(-5,5);ctx.lineTo(-5,8);ctx.stroke();
+  ctx.fillStyle='#C8121E';ctx.beginPath();ctx.arc(-8.5,-4.5,3.4,0,7);ctx.fill();
+  ctx.fillStyle='#F5D0B5';ctx.beginPath();ctx.arc(-8,-9.3,2,0,7);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-7.6,-7.6,1.7,0,Math.PI);ctx.fill();
+  ctx.fillStyle='#C8121E';ctx.beginPath();ctx.moveTo(-10.2,-10.2);ctx.lineTo(-5.8,-10.2);ctx.lineTo(-11.5,-14);ctx.fill();
+  ctx.fillStyle='#fff';ctx.fillRect(-10.4,-10.9,4.8,1.2);ctx.beginPath();ctx.arc(-11.7,-14,1,0,7);ctx.fill();
+  ctx.restore();ctx.globalAlpha=1;
+}
 let lastLabel=0;
 function render(now){
   ctx.clearRect(0,0,cvs.width,cvs.height);const s=T.s*T.dpr,k=T.dpr;
@@ -308,9 +334,9 @@ function render(now){
   FX.arcs=FX.arcs.filter(o=>now-o.t<1600);
   for(const o of FX.arcs){const p=(now-o.t)/1600,c=ctrl(o.a,o.d);ctx.beginPath();for(let i=0;i<=20;i++){const t=Math.max(0,p-.4)+(Math.min(1,p)-Math.max(0,p-.4))*i/20;const [x,y]=P(...qpt(o.a,c,o.d,t));i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
     ctx.strokeStyle=`rgba(255,255,255,${.35*(1-p)})`;ctx.lineWidth=1*k;ctx.stroke()}
-  FX.hi=FX.hi.filter(o=>now-o.t<2600);
-  for(const o of FX.hi){const p=Math.min(1,(now-o.t)/900),f=now-o.t>1800?1-(now-o.t-1800)/800:1,c=ctrl(o.a,o.d);ctx.beginPath();for(let i=0;i<=24;i++){const [x,y]=P(...qpt(o.a,c,o.d,p*i/24));i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
-    ctx.strokeStyle=`rgba(243,28,42,${.9*f})`;ctx.lineWidth=1.8*k;ctx.stroke();const [ax,ay]=P(o.a.x,o.a.y);ctx.beginPath();ctx.arc(ax,ay,3.2*s,0,7);ctx.fillStyle=`rgba(243,28,42,${f})`;ctx.fill()}
+  const HD=THEME.sleigh?1700:900,HL=HD+1700;FX.hi=FX.hi.filter(o=>now-o.t<HL);
+  for(const o of FX.hi){const p0=Math.min(1,(now-o.t)/HD),p=THEME.sleigh?p0*(2-p0):p0,f=now-o.t>HL-800?1-(now-o.t-HL+800)/800:1,c=ctrl(o.a,o.d);ctx.beginPath();for(let i=0;i<=24;i++){const [x,y]=P(...qpt(o.a,c,o.d,p*i/24));i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+    ctx.strokeStyle=`rgba(243,28,42,${.9*f})`;ctx.lineWidth=1.8*k;ctx.stroke();const [ax,ay]=P(o.a.x,o.a.y);ctx.beginPath();ctx.arc(ax,ay,3.2*s,0,7);ctx.fillStyle=`rgba(243,28,42,${f})`;ctx.fill();if(THEME.sleigh&&now-o.t<HD+450)sleigh(o,c,p,p<1?1:1-(now-o.t-HD)/450,now,k)}
   FX.pings=FX.pings.filter(o=>now-o.t<1100);
   for(const o of FX.pings){const p=(now-o.t)/1100,[x,y]=P(o.d.x,o.d.y);ctx.beginPath();ctx.arc(x,y,(2.5+p*13)*s,0,7);ctx.strokeStyle=`rgba(255,255,255,${.85*(1-p)})`;ctx.lineWidth=1.2*k;ctx.stroke()}
   FX.labels=FX.labels.filter(o=>now-o.t<2600);
