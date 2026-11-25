@@ -8,8 +8,8 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://piotrzalewskiaxabee-hue.github.io/resabee-live/lp/">
 <meta name="theme-color" content="#231F20">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="https://cdn.prod.website-files.com/66c6eb8e832658d31d056d07/66fa7fcf2a834cd16f0a7a6f_resabee__favicon_travel%20tech.png">
+<link rel="apple-touch-icon" href="https://cdn.prod.website-files.com/66c6eb8e832658d31d056d07/66fa7fcf2a834cd16f0a7a6f_resabee__favicon_travel%20tech.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Resabee Travel Tech">
 <meta property="og:locale" content="pl_PL">
@@ -96,7 +96,7 @@ footer svg{height:14px;width:auto}
 
 dialog{margin:auto;border:1px solid var(--line);border-radius:18px;background:var(--black);color:#fff;padding:18px;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto}
 dialog::backdrop{background:rgba(0,0,0,.7)}
-dialog h2{font-size:18px;font-weight:600;margin-bottom:4px}
+dialog h2{font-size:18px;font-weight:600;margin-bottom:14px}
 dialog .sub{font-size:13px;color:var(--g2);margin-bottom:14px}
 dialog img{width:100%;height:auto;border-radius:12px;display:block;border:1px solid var(--line);background:#2B2728;aspect-ratio:1}
 dialog .acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
@@ -167,12 +167,11 @@ dialog .acts .btn{flex:1 1 200px}
 <dialog id="shareDlg" aria-labelledby="shareTitle">
   <button class="x" type="button" id="shareClose" aria-label="Zamknij">&times;</button>
   <h2 id="shareTitle">Udostępnij dane</h2>
-  <p class="sub">Grafika z aktualnymi liczbami w formacie LinkedIn (1200 × 1200 px).</p>
   <img id="shareImg" alt="Grafika z aktualną liczbą wyszukiwań, top kierunkami i filtrami">
   <div class="acts">
     <a class="btn btn-red" id="dlBtn" href="#" download>Pobierz grafikę</a>
     <button class="btn btn-line" id="nativeBtn" type="button" hidden>Udostępnij</button>
-    <a class="btn btn-line" id="liBtn" href="#" target="_blank" rel="noopener">Opublikuj na LinkedIn</a>
+    <button class="btn btn-line" id="liBtn" type="button">Opublikuj na LinkedIn</button>
     <button class="btn btn-line" id="copyBtn" type="button">Kopiuj link</button>
   </div>
   <p id="toast" role="status"></p>
@@ -308,7 +307,6 @@ async function openShare(){
   const n=new Date(),name=`resabee-black-week-${n.getFullYear()}-${pad(n.getMonth()+1)}-${pad(n.getDate())}.png`;
   cardFile=new File([blob],name,{type:'image/png'});
   $('shareImg').src=cardUrl;$('dlBtn').href=cardUrl;$('dlBtn').download=name;
-  $('liBtn').href='https://www.linkedin.com/sharing/share-offsite/?url='+encodeURIComponent(PAGE_URL);
   $('nativeBtn').hidden=!(navigator.canShare&&navigator.canShare({files:[cardFile]}));
 }
 $('shareBtn').addEventListener('click',openShare);
@@ -316,6 +314,13 @@ $('shareClose').addEventListener('click',()=>$('shareDlg').close());
 $('shareDlg').addEventListener('click',e=>{if(e.target===$('shareDlg'))$('shareDlg').close()});
 $('nativeBtn').addEventListener('click',async()=>{try{await navigator.share({files:[cardFile],title:'Mapa wyszukiwań Black Week',text:'Black Week w turystyce na żywo: '+PAGE_URL})}catch(e){}});
 $('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(PAGE_URL);$('toast').textContent='Link skopiowany.'}catch(e){$('toast').textContent=PAGE_URL}});
+function postText(){const t=S.rows[0];return `Black Week w turystyce na żywo: ${fmt(S.today)} wyszukiwań ofert dziś. Najczęściej szukany kierunek: ${t?t.c:''}. Zobacz mapę: ${PAGE_URL} #BlackWeek #turystyka #Resabee`}
+$('liBtn').addEventListener('click',async()=>{
+  if(cardFile&&navigator.canShare&&navigator.canShare({files:[cardFile]})){try{await navigator.share({files:[cardFile],text:postText()});return}catch(e){if(e.name==='AbortError')return}}
+  $('dlBtn').click();
+  window.open('https://www.linkedin.com/feed/?shareActive=true&text='+encodeURIComponent(postText()),'_blank','noopener');
+  $('toast').textContent='Grafika została pobrana. W LinkedIn kliknij ikonę zdjęcia i dodaj ją do posta.';
+});
 
 resize();panels();setInterval(tick,100);setInterval(panels,3000);
 from=target=shown=S.today;
