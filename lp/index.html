@@ -30,7 +30,7 @@
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{--black:#231F20;--red:#F31C2A;--g1:#58595B;--g2:#A7A9AC;--g3:#DCDDDE;--card:#2B2728;--line:#3A3536}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -89,6 +89,24 @@ h1 span{color:var(--red);display:block}
 .chip{border:1px solid var(--line);background:#322D2E;border-radius:99px;padding:6px 12px;font-size:13px;display:inline-flex;gap:8px;align-items:baseline}
 .chip b{font-weight:600;font-variant-numeric:tabular-nums}
 .chip.hot{border-color:var(--red)}
+.board .bh,.board li{display:grid;grid-template-columns:76px minmax(0,1fr) minmax(0,1.5fr) 76px;gap:8px;align-items:center}
+.board .bh{font-size:10px;letter-spacing:.12em;color:var(--g2);text-transform:uppercase;padding:0 0 6px;border-bottom:1px solid var(--line)}
+.board ol{list-style:none;display:flex;flex-direction:column;margin-top:6px}
+.board li{padding:6px 0;border-bottom:1px solid rgba(58,53,54,.6);font:600 12px/1 'Roboto Mono',ui-monospace,Menlo,monospace;text-transform:uppercase;white-space:nowrap;overflow:hidden;transition:opacity .6s}
+.board li>span{overflow:hidden;min-width:0}
+.board li .sub{font:400 11px/1 Poppins,Arial,sans-serif;text-transform:none;color:var(--g2);margin-left:6px}
+.board .f{display:inline-block;width:1.02ch;text-align:center;padding:3px 0;margin-right:1px;border-radius:2px;background:linear-gradient(#2E292A 0 49%,#1C191A 49% 51%,#2E292A 51%);color:#fff}
+.board .f.sp{background:none}
+.board .f.ok{animation:flip .18s ease-out}
+@keyframes flip{0%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+.board li.new{animation:rowin .35s ease-out}
+.board li.new .t .f{color:var(--red)}
+@keyframes rowin{from{opacity:0;transform:translateY(-10px)}}
+.board .bf{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin-top:10px;font-size:12px;color:var(--g2)}
+.board .bf b{color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+.pulse{display:flex;align-items:flex-end;gap:2px;height:22px;flex:none}
+.pulse i{width:3px;background:var(--g1);border-radius:1px;transition:height .1s}
+.pulse i:last-child{background:var(--red)}
 
 footer{padding:0 18px 24px;display:flex;justify-content:flex-end;font-size:11.5px;color:var(--g2)}
 footer a{display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap}
@@ -121,7 +139,8 @@ dialog .acts .btn{flex:1 1 200px}
   #pitch p{font-size:15px}
   footer{grid-area:map;align-self:end;justify-self:end;z-index:3;padding:0 40px 16px}
 }
-@media (prefers-reduced-motion:reduce){.tag i{animation:none}.btn{transition:none}}
+@media (max-width:420px){.board .bh,.board li{grid-template-columns:70px 44px minmax(0,1fr) 70px;gap:6px}.board li{font-size:11px}.board li .sub{display:none}}
+@media (prefers-reduced-motion:reduce){.tag i{animation:none}.btn{transition:none}.board .f.ok,.board li.new{animation:none}}
 </style>
 </head>
 <body>
@@ -150,6 +169,12 @@ dialog .acts .btn{flex:1 1 200px}
 </aside>
 
 <section id="cards" aria-label="Statystyki wyszukiwań">
+  <div class="card board">
+    <h2>Tablica wyszukiwań <span class="tag"><i></i>na żywo</span></h2>
+    <div class="bh" aria-hidden="true"><span>Godz.</span><span>Wylot</span><span>Kierunek</span><span>Termin</span></div>
+    <ol id="board" aria-label="Najnowsze wyszukiwania"></ol>
+    <div class="bf"><span>Nowe zapytanie co <b id="kEvery">-</b> · <b id="kRate">-</b>/s</span><span class="pulse" id="pulse" aria-hidden="true"></span></div>
+  </div>
   <div class="card">
     <h2>Najpopularniejsze kierunki <span class="tag"><i></i>na żywo</span></h2>
     <ol class="top" id="top"></ol>
@@ -189,12 +214,14 @@ const FILTERS={'All inclusive':.46,'Hotel 4* i więcej':.31,'Promocja Black Week
 function profileAt(d){const h=d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;const i=Math.floor(h)%24,j=(i+1)%24,f=h-Math.floor(h),s=f*f*(3-2*f);return PROFILE[i]*(1-s)+PROFILE[j]*s}
 function rateAt(d){const t=d.getTime()/1000;return PEAK*profileAt(d)*(1+.05*Math.sin(t/7.3)+.04*Math.sin(t/2.1)+.03*Math.sin(t/31))}
 
-const S={today:0,buckets:[],top:new Set(),rows:[],flt:[]};
+const S={today:0,buckets:[],top:new Set(),rows:[],flt:[],rate:0,pulse:[]};
 const nb=m=>({min:m,total:0,city:{},flt:{}});
 function bucket(ts){const m=Math.floor(ts/60000);let b=S.buckets[S.buckets.length-1];if(!b||b.min!==m){b=nb(m);S.buckets.push(b);while(S.buckets.length>15)S.buckets.shift()}return b}
+const TRIP_M=[[2026,11,13],[2027,0,11],[2027,1,10],[2027,2,6],[2027,3,7],[2027,4,7],[2027,5,10],[2027,6,15],[2027,7,13],[2027,8,5]];
+function mockDate(){const s=TRIP_M.reduce((a,x)=>a+x[2],0);let v=Math.random()*s,m=TRIP_M[0];for(const x of TRIP_M){v-=x[2];if(v<=0){m=x;break}}return `${pad(1+Math.floor(Math.random()*28))}.${pad(m[1]+1)}.${m[0]}`}
 function mockSearch(ts){
   const d=Math.random()<ANY_DEST?null:pickW(MAP.dest,'w'), a=Math.random()<ANY_APT?null:pickW(MAP.airports,'w');
-  return {ts,destCity:d&&d.city,destCountry:d&&d.country,airport:a&&a.code,filters:Object.keys(FILTERS).filter(f=>Math.random()<FILTERS[f])};
+  return {ts,destCity:d&&d.city,destCountry:d&&d.country,airport:a&&a.code,dateFrom:mockDate(),filters:Object.keys(FILTERS).filter(f=>Math.random()<FILTERS[f])};
 }
 function ingestSearch(e,draw){
   S.today++;const b=bucket(e.ts);b.total++;
@@ -214,7 +241,7 @@ window.ResabeeLive={ingestSearch:e=>ingestSearch(e,true),state:S};
 
 let carry=0;
 function tick(){
-  const now=Date.now(),rate=rateAt(new Date(now));carry+=rate*.1;const n=Math.floor(carry);carry-=n;
+  const now=Date.now(),rate=rateAt(new Date(now));carry+=rate*.1*(.75+Math.random()*.5);const n=Math.floor(carry);carry-=n;S.rate=rate;S.pulse.push(n);if(S.pulse.length>28)S.pulse.shift();
   const p=Math.min(1,30/rate);for(let i=0;i<n;i++)ingestSearch(mockSearch(now-Math.random()*100),Math.random()<p);
 }
 
@@ -225,8 +252,9 @@ function resize(){const r=cvs.parentElement.getBoundingClientRect(),dpr=Math.min
   MAP.dest.forEach(d=>{if(d.edge==='W')d.x=-T.ox/s+14;if(d.edge==='E')d.x=(r.width-T.ox)/s-14})}
 window.addEventListener('resize',resize);
 const P=(x,y)=>[(T.ox+x*T.s)*T.dpr,(T.oy+y*T.s)*T.dpr];
-const FX={pings:[],arcs:[],labels:[],
+const FX={pings:[],arcs:[],labels:[],hi:[],
   search(e){const d=e.destCity&&destBy[e.destCity];if(!d||this.pings.length>240)return;const t=performance.now();this.pings.push({d,t});
+    if(e.airport&&aptBy[e.airport]&&!d.edge)BOARD.q=e;
     if(e.airport&&Math.random()<.4)this.arcs.push({a:aptBy[e.airport],d,t})}};
 function ctrl(a,d){const mx=(a.x+d.x)/2,my=(a.y+d.y)/2,len=Math.hypot(d.x-a.x,d.y-a.y);return[mx,my-len*.22]}
 function qpt(a,c,d,t){const u=1-t;return[u*u*a.x+2*u*t*c[0]+t*t*d.x,u*u*a.y+2*u*t*c[1]+t*t*d.y]}
@@ -242,15 +270,17 @@ function render(now){
   FX.arcs=FX.arcs.filter(o=>now-o.t<1600);
   for(const o of FX.arcs){const p=(now-o.t)/1600,c=ctrl(o.a,o.d);ctx.beginPath();for(let i=0;i<=20;i++){const t=Math.max(0,p-.4)+(Math.min(1,p)-Math.max(0,p-.4))*i/20;const [x,y]=P(...qpt(o.a,c,o.d,t));i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
     ctx.strokeStyle=`rgba(255,255,255,${.35*(1-p)})`;ctx.lineWidth=1*k;ctx.stroke()}
+  FX.hi=FX.hi.filter(o=>now-o.t<2600);
+  for(const o of FX.hi){const p=Math.min(1,(now-o.t)/900),f=now-o.t>1800?1-(now-o.t-1800)/800:1,c=ctrl(o.a,o.d);ctx.beginPath();for(let i=0;i<=24;i++){const [x,y]=P(...qpt(o.a,c,o.d,p*i/24));i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+    ctx.strokeStyle=`rgba(243,28,42,${.9*f})`;ctx.lineWidth=1.8*k;ctx.stroke();const [ax,ay]=P(o.a.x,o.a.y);ctx.beginPath();ctx.arc(ax,ay,3.2*s,0,7);ctx.fillStyle=`rgba(243,28,42,${f})`;ctx.fill()}
   FX.pings=FX.pings.filter(o=>now-o.t<1100);
   for(const o of FX.pings){const p=(now-o.t)/1100,[x,y]=P(o.d.x,o.d.y);ctx.beginPath();ctx.arc(x,y,(2.5+p*13)*s,0,7);ctx.strokeStyle=`rgba(255,255,255,${.85*(1-p)})`;ctx.lineWidth=1.2*k;ctx.stroke()}
-  if(now-lastLabel>2200&&FX.pings.length){const o=FX.pings[FX.pings.length-1];if(!o.d.edge){lastLabel=now;FX.labels.push({d:o.d,t:now})}}
   FX.labels=FX.labels.filter(o=>now-o.t<2600);
   for(const o of FX.labels){const a=Math.min(1,(now-o.t)/250,(2600-(now-o.t))/400),[x,y]=P(o.d.x,o.d.y);
-    ctx.font=`600 ${12*k}px Poppins, Arial`;const w=ctx.measureText(o.d.city).width;ctx.globalAlpha=a;
-    ctx.fillStyle='rgba(35,31,32,.92)';ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1*k;
+    ctx.font=`600 ${12*k}px Poppins, Arial`;const txt=o.txt||o.d.city,w=ctx.measureText(txt).width;ctx.globalAlpha=a;
+    ctx.fillStyle='rgba(35,31,32,.92)';ctx.strokeStyle=o.txt?'rgba(243,28,42,.9)':'rgba(255,255,255,.35)';ctx.lineWidth=1*k;
     const bx=x+10*k,by=y-26*k,bw=w+18*k,bh=22*k;rrect(ctx,bx,by,bw,bh,6*k);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(o.d.city,bx+9*k,by+bh/2);ctx.globalAlpha=1}
+    ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(txt,bx+9*k,by+bh/2);ctx.globalAlpha=1}
 }
 
 const $=id=>document.getElementById(id);let shown=0,from=0,target=0,t0=0,lastTxt=0;
@@ -261,6 +291,32 @@ function panels(){
   $('top').innerHTML=S.rows.map((r,i)=>`<li><span class="n">${pad(i+1)}</span><span class="nm">${r.c} <span>${r.country}</span></span><span class="p">${r.p.toFixed(1)}%</span><span class="bar"><i style="width:${r.p/(mx/C.tot*100)*100}%"></i></span></li>`).join('');
   const F=agg('flt');S.flt=Object.entries(F.o).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([f,v])=>({f,p:Math.round(v/F.tot*100)}));
   $('chips').innerHTML=S.flt.map(x=>`<span class="chip${x.f==='Promocja Black Week'?' hot':''}">${x.f} <b>${x.p}%</b></span>`).join('');
+}
+// Tablica wyszukiwań (split-flap)
+const BOARD={q:null,last:-1e9,ms:1200,max:matchMedia('(min-width:1000px)').matches?5:6};
+const FLAP='ABCDEFGHIJKLMNOPRSTUWZ0123456789';
+function flap(el,text){el.textContent='';const sp=[...text].map(ch=>{const s=document.createElement('span');s.className='f'+(ch===' '?' sp':'');s.textContent=ch===' '?' ':FLAP[Math.random()*FLAP.length|0];el.appendChild(s);return s});
+  let f=0;const iv=setInterval(()=>{f++;let done=true;sp.forEach((s,i)=>{const ch=text[i];if(ch===' ')return;if(f>3+i){if(!s.classList.contains('ok')){s.textContent=ch;s.classList.add('ok')}}else{done=false;s.textContent=FLAP[Math.random()*FLAP.length|0]}});if(done)clearInterval(iv)},45)}
+function boardRow(e){
+  const d=new Date(e.ts),a=aptBy[e.airport],li=document.createElement('li');li.className='new';
+  const tm=document.createElement('span'),ap=document.createElement('span'),ds=document.createElement('span'),dt=document.createElement('span');
+  tm.className='t';ap.className='ap';ds.className='ds';dt.className='dt';
+  li.append(tm,ap,ds,dt);
+  const list=$('board');list.prepend(li);while(list.children.length>BOARD.max)list.lastChild.remove();
+  [...list.children].forEach((r,i)=>{r.style.opacity=String(Math.max(.35,1-i*.13));if(i)r.classList.remove('new')});
+  flap(tm,`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
+  const c=document.createElement('span');ap.append(c);flap(c,e.airport);const cs=document.createElement('span');cs.className='sub';cs.textContent=a?a.city:'';ap.append(cs);
+  flap(ds,e.destCity.toUpperCase());
+  const df=String(e.dateFrom||'').replace(/^(\d{2})\.(\d{2})\.\d{2}(\d{2})$/,'$1.$2.$3');flap(dt,df);
+}
+function boardStep(now){
+  if(!BOARD.q||now-BOARD.last<BOARD.ms)return;const e=BOARD.q;BOARD.q=null;BOARD.last=now;boardRow(e);
+  const a=aptBy[e.airport],d=destBy[e.destCity];FX.hi.push({a,d,t:now});FX.labels.push({d,t:now,txt:e.airport+' → '+e.destCity});
+}
+function boardStats(){
+  if(!S.rate)return;const ms=1000/S.rate;$('kEvery').textContent=(ms<10?ms.toFixed(1).replace('.',','):Math.round(ms))+' ms';$('kRate').textContent=fmt(S.rate);
+  const mx=Math.max(...S.pulse,1),pl=$('pulse');if(pl.children.length!==S.pulse.length)pl.innerHTML=S.pulse.map(()=>'<i></i>').join('');
+  S.pulse.forEach((v,i)=>{pl.children[i].style.height=Math.max(2,Math.round(v/mx*22))+'px'});
 }
 const d0=new Date();$('today').textContent=d0.getDate()+' '+MGEN[d0.getMonth()];
 
@@ -320,10 +376,10 @@ $('liBtn').addEventListener('click',()=>{
   $('toast').textContent='Grafika została pobrana. W LinkedIn kliknij ikonę zdjęcia i dodaj ją do posta.';
 });
 
-resize();panels();setInterval(tick,100);setInterval(panels,3000);
+resize();panels();setInterval(tick,100);setInterval(panels,3000);setInterval(boardStats,200);
 from=target=shown=S.today;
 (function frame(now){if(now-t0>2000){from=shown;target=S.today;t0=now}const p=Math.min(1,(now-t0)/1500);shown=from+(target-from)*(1-Math.pow(1-p,3));
-  if(now-lastTxt>120){lastTxt=now;$('kSearch').textContent=fmt(shown)}render(now);requestAnimationFrame(frame)})(performance.now());
+  if(now-lastTxt>120){lastTxt=now;$('kSearch').textContent=fmt(shown)}boardStep(now);render(now);requestAnimationFrame(frame)})(performance.now());
 </script>
 <script>
 (async()=>{try{
