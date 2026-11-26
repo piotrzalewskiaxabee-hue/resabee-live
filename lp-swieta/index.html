@@ -432,7 +432,18 @@ $('shareClose').addEventListener('click',()=>$('shareDlg').close());
 $('shareDlg').addEventListener('click',e=>{if(e.target===$('shareDlg'))$('shareDlg').close()});
 $('nativeBtn').addEventListener('click',async()=>{try{await navigator.share({files:[cardFile],title:THEME.shareTitle,text:postText()})}catch(e){}});
 function postText(){const t=S.rows[0];return THEME.post(fmt(S.today),t?t.c:'',PAGE_URL)}
+const IS_MOBILE=matchMedia('(pointer:coarse)').matches&&/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+// Mobile: aplikacja LinkedIn ignoruje feed/?shareActive, więc używamy systemowego arkusza udostępniania.
+function liMobile(){
+  const txt=postText();
+  try{navigator.clipboard&&navigator.clipboard.writeText(txt).catch(()=>{})}catch(e){}
+  if(navigator.share){navigator.share({title:document.title,text:txt}).catch(()=>{});
+    $('toast').textContent='Wybierz LinkedIn. Tekst posta jest też w schowku, gdyby się nie wkleił.';return}
+  $('toast').textContent='Tekst posta jest w schowku. Wklej go we wpisie.';
+  location.href='https://www.linkedin.com/sharing/share-offsite/?url='+encodeURIComponent(PAGE_URL);
+}
 $('liBtn').addEventListener('click',()=>{
+  if(IS_MOBILE)return liMobile();
   if(!cardUrl)return;
   $('dlBtn').click();
   window.open('https://www.linkedin.com/feed/?shareActive=true&text='+encodeURIComponent(postText()),'_blank','noopener');
